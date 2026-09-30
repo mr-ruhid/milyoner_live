@@ -30,7 +30,7 @@ class QuestionFormScreen extends StatefulWidget {
 class _QuestionFormScreenState extends State<QuestionFormScreen> {
   final Map<String, TextEditingController> _questionControllers = {};
   final Map<String, List<TextEditingController>> _optionControllers = {};
-  final Set<String> _activeLangs = {};
+  final List<String> _langs = [];
   String _activeTab = 'en';
   int _correct = 0;
   int _reward = 100;
@@ -45,9 +45,10 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
   Future<void> _init() async {
     final locale = context.read<LocaleService>();
     final langs = locale.languages.map((l) => l['code']!).toList();
-    if (langs.isEmpty) langs.add('en');
+    _langs.clear();
+    _langs.addAll(langs.isEmpty ? ['en'] : langs);
 
-    for (final code in langs) {
+    for (final code in _langs) {
       _questionControllers[code] = TextEditingController();
       _optionControllers[code] =
           List.generate(4, (_) => TextEditingController());
@@ -62,12 +63,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
         for (final entry in translations.entries) {
           final code = entry.key;
           final q = entry.value;
-          if (!_questionControllers.containsKey(code)) {
-            _questionControllers[code] = TextEditingController();
-            _optionControllers[code] =
-                List.generate(4, (_) => TextEditingController());
-          }
-          _activeLangs.add(code);
+          if (!_questionControllers.containsKey(code)) continue;
           _questionControllers[code]!.text = q.question;
           for (int i = 0; i < 4 && i < q.options.length; i++) {
             _optionControllers[code]![i].text = q.options[i];
@@ -76,7 +72,6 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
           _reward = q.reward;
         }
       } else {
-        _activeLangs.add(locale.currentLang);
         final q = widget.question!;
         _questionControllers[locale.currentLang]!.text = q.question;
         for (int i = 0; i < 4 && i < q.options.length; i++) {
@@ -85,9 +80,8 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
         _correct = q.correct;
         _reward = q.reward;
       }
-      _activeTab = _activeLangs.first;
+      _activeTab = _langs.first;
     } else {
-      _activeLangs.add(locale.currentLang);
       _activeTab = locale.currentLang;
     }
 
@@ -107,6 +101,20 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
     super.dispose();
   }
 
+  bool _isLangFilled(String code) {
+    final qCtrl = _questionControllers[code];
+    final oCtrl = _optionControllers[code];
+    if (qCtrl == null || oCtrl == null) return false;
+    if (qCtrl.text.trim().isEmpty) return false;
+    for (final c in oCtrl) {
+      if (c.text.trim().isEmpty) return false;
+    }
+    return true;
+  }
+
+  int get _filledCount =>
+      _langs.where(_isLangFilled).length;
+
   @override
   Widget build(BuildContext context) {
     final locale = context.read<LocaleService>();
@@ -123,13 +131,12 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
               : Column(
             children: [
               _buildAppBar(context, locale, isEdit),
+              _buildProgressBar(),
               _buildLangTabs(locale),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
-                  child: _activeLangs.contains(_activeTab)
-                      ? _buildForm(locale, _activeTab)
-                      : _buildAddLangPrompt(locale, _activeTab),
+                  child: _buildForm(locale, _activeTab),
                 ),
               ),
               _buildBottomBar(locale),
@@ -198,6 +205,50 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
     );
   }
 
+  Widget _buildProgressBar() {
+    final total = _langs.length;
+    final filled = _filledCount;
+    final isComplete = filled == total && total > 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                isComplete ? Icons.check_circle : Icons.info_outline,
+                color: isComplete ? AppColors.correct : AppColors.gold,
+                size: 14,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '$filled / $total languages filled',
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isComplete ? AppColors.correct : Colors.white70,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: total == 0 ? 0 : filled / total,
+              minHeight: 4,
+              backgroundColor: Colors.black.withOpacity(0.4),
+              valueColor: AlwaysStoppedAnimation(
+                isComplete ? AppColors.correct : AppColors.gold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLangTabs(LocaleService locale) {
     final langs = locale.languages;
     if (langs.isEmpty) return const SizedBox.shrink();
@@ -206,7 +257,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
       height: 48,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         itemCount: langs.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, i) {
@@ -214,7 +265,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
           final code = lang['code']!;
           final flag = lang['flag'] ?? '🌐';
           final isActive = _activeTab == code;
-          final isFilled = _activeLangs.contains(code);
+          final isFilled = _isLangFilled(code);
 
           return GestureDetector(
             onTap: () => setState(() => _activeTab = code),
@@ -229,7 +280,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                       ? AppColors.gold
                       : (isFilled
                       ? AppColors.correct.withOpacity(0.6)
-                      : _kBorder.withOpacity(0.4)),
+                      : AppColors.wrong.withOpacity(0.6)),
                   width: isActive ? 1.8 : 1.2,
                 ),
               ),
@@ -247,14 +298,12 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
                       letterSpacing: 1,
                     ),
                   ),
-                  if (isFilled && !isActive) ...[
-                    const SizedBox(width: 6),
-                    const Icon(
-                      Icons.check_circle,
-                      color: AppColors.correct,
-                      size: 13,
-                    ),
-                  ],
+                  const SizedBox(width: 6),
+                  Icon(
+                    isFilled ? Icons.check_circle : Icons.error_outline,
+                    color: isFilled ? AppColors.correct : AppColors.wrong,
+                    size: 13,
+                  ),
                 ],
               ),
             ),
@@ -264,95 +313,51 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
     );
   }
 
-  Widget _buildAddLangPrompt(LocaleService locale, String code) {
-    final lang = locale.languages.firstWhere(
-          (l) => l['code'] == code,
-      orElse: () => {'flag': '🌐', 'name': code},
-    );
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 60),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              lang['flag'] ?? '🌐',
-              style: const TextStyle(fontSize: 56),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              lang['name'] ?? code,
-              style: GoogleFonts.orbitron(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Not added yet',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: Colors.white54,
-              ),
-            ),
-            const SizedBox(height: 24),
-            GestureDetector(
-              onTap: () => setState(() {
-                _activeLangs.add(code);
-              }),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  gradient: _kFill,
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: AppColors.gold, width: 1.5),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.add_circle_outline,
-                      color: AppColors.gold,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Add translation',
-                      style: GoogleFonts.orbitron(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.gold,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildForm(LocaleService locale, String code) {
     final qCtrl = _questionControllers[code];
     final oCtrl = _optionControllers[code];
     if (qCtrl == null || oCtrl == null) return const SizedBox.shrink();
 
+    final langInfo = locale.languages.firstWhere(
+          (l) => l['code'] == code,
+      orElse: () => {'flag': '🌐', 'name': code},
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _kBorder.withOpacity(0.4)),
+          ),
+          child: Row(
+            children: [
+              Text(
+                langInfo['flag'] ?? '🌐',
+                style: const TextStyle(fontSize: 22),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                (langInfo['name'] ?? code).toString().toUpperCase(),
+                style: GoogleFonts.orbitron(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.gold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
         _buildLabel(locale.t('question_text')),
         const SizedBox(height: 8),
         TextField(
           controller: qCtrl,
+          onChanged: (_) => setState(() {}),
           style: GoogleFonts.poppins(color: Colors.white, fontSize: 13),
           maxLines: 3,
           decoration: _inputDecoration('...'),
@@ -456,6 +461,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
           Expanded(
             child: TextField(
               controller: ctrl,
+              onChanged: (_) => setState(() {}),
               style: GoogleFonts.poppins(color: Colors.white, fontSize: 13),
               decoration: _inputDecoration('$letter option'),
             ),
@@ -570,48 +576,64 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
   }
 
   Widget _buildBottomBar(LocaleService locale) {
+    final isComplete = _filledCount == _langs.length && _langs.isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: GestureDetector(
-        onTap: _save,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.gold, AppColors.goldDark],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: _kBorder, width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.gold.withOpacity(0.4),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+        onTap: isComplete ? _save : null,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: isComplete ? 1.0 : 0.4,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isComplete
+                    ? [AppColors.gold, AppColors.goldDark]
+                    : [Colors.grey.shade700, Colors.grey.shade900],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.check_circle_outline,
-                color: Color(0xFF041A52),
-                size: 22,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                locale.t('save'),
-                style: GoogleFonts.orbitron(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  color: const Color(0xFF041A52),
-                  letterSpacing: 2,
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: _kBorder, width: 1.5),
+              boxShadow: isComplete
+                  ? [
+                BoxShadow(
+                  color: AppColors.gold.withOpacity(0.4),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
-              ),
-            ],
+              ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isComplete
+                      ? Icons.check_circle_outline
+                      : Icons.lock_outline,
+                  color: isComplete
+                      ? const Color(0xFF041A52)
+                      : Colors.white54,
+                  size: 22,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  locale.t('save'),
+                  style: GoogleFonts.orbitron(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    color: isComplete
+                        ? const Color(0xFF041A52)
+                        : Colors.white54,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -619,38 +641,27 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
   }
 
   Future<void> _save() async {
+    if (_filledCount != _langs.length) {
+      _showError('Fill all languages first');
+      return;
+    }
+
     final service = context.read<QuestionService>();
+    final id = widget.question?.id ?? service.generateId();
 
     final Map<String, Question> perLang = {};
-    for (final code in _activeLangs) {
-      final qCtrl = _questionControllers[code];
-      final oCtrl = _optionControllers[code];
-      if (qCtrl == null || oCtrl == null) continue;
-
-      final questionText = qCtrl.text.trim();
-      final options = oCtrl.map((c) => c.text.trim()).toList();
-
-      if (questionText.isEmpty || options.any((o) => o.isEmpty)) {
-        _showError('Fill all fields for ${code.toUpperCase()}');
-        return;
-      }
-
-      final id = widget.question?.id ?? service.generateId();
+    for (final code in _langs) {
+      final qCtrl = _questionControllers[code]!;
+      final oCtrl = _optionControllers[code]!;
       perLang[code] = Question(
         id: id,
-        question: questionText,
-        options: options,
+        question: qCtrl.text.trim(),
+        options: oCtrl.map((c) => c.text.trim()).toList(),
         correct: _correct,
         reward: _reward,
       );
     }
 
-    if (perLang.isEmpty) {
-      _showError('Add at least one language');
-      return;
-    }
-
-    final id = widget.question?.id ?? service.generateId();
     await service.saveQuestionForLanguages(id, perLang);
 
     if (!mounted) return;
