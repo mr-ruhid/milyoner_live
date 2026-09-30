@@ -16,8 +16,12 @@ class MilyonerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => LocaleService()..loadLanguage('en')),
-        ChangeNotifierProvider(create: (_) => QuestionService()),
+        ChangeNotifierProvider(
+          create: (_) => LocaleService()..init(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => QuestionService(),
+        ),
       ],
       child: MaterialApp(
         title: 'Milyoner Live',
