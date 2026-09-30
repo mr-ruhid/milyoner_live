@@ -5,9 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../models/question.dart';
+import '../models/voter_info.dart';
 import '../services/question_service.dart';
 import '../services/locale_service.dart';
 import 'question_form_screen.dart';
+import 'result_screen.dart';
 
 const Color _kBorder = Color(0xFFD9D4C3);
 const LinearGradient _kFill = LinearGradient(
@@ -37,11 +39,18 @@ class _GameScreenState extends State<GameScreen> {
   bool _isVotingActive = false;
   bool _showResult = false;
   Map<String, int> _votes = {'A': 0, 'B': 0, 'C': 0, 'D': 0};
+  Map<String, List<VoterInfo>> _voters = {
+    'A': [],
+    'B': [],
+    'C': [],
+    'D': [],
+  };
   List<int> _hiddenOptions = [];
   bool _fiftyFiftyUsed = false;
   bool _revealUsed = false;
   int _topVotedIndex = -1;
   bool _topVotedWasCorrect = false;
+  int _testUserCounter = 0;
 
   @override
   void initState() {
@@ -78,6 +87,7 @@ class _GameScreenState extends State<GameScreen> {
       _isVotingActive = true;
       _showResult = false;
       _votes = {'A': 0, 'B': 0, 'C': 0, 'D': 0};
+      _voters = {'A': [], 'B': [], 'C': [], 'D': []};
       _hiddenOptions = [];
       _fiftyFiftyUsed = false;
       _revealUsed = false;
@@ -94,7 +104,7 @@ class _GameScreenState extends State<GameScreen> {
     });
   }
 
-  void _revealResult() {
+  Future<void> _revealResult() async {
     _timer?.cancel();
     final letters = ['A', 'B', 'C', 'D'];
     int topIdx = -1;
@@ -107,6 +117,8 @@ class _GameScreenState extends State<GameScreen> {
       }
     }
 
+    final totalVotes = _votes.values.fold<int>(0, (a, b) => a + b);
+
     setState(() {
       _isVotingActive = false;
       _showResult = true;
@@ -115,9 +127,30 @@ class _GameScreenState extends State<GameScreen> {
           _topVotedIndex == _currentQuestion?.correct && topCount > 0;
     });
 
-    _autoNextTimer = Timer(const Duration(seconds: 4), () {
-      if (mounted) _nextQuestion();
-    });
+    if (totalVotes == 0 || _currentQuestion == null) {
+      _autoNextTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) _nextQuestion();
+      });
+      return;
+    }
+
+    await Future.delayed(const Duration(milliseconds: 1200));
+    if (!mounted) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ResultScreen(
+          question: _currentQuestion!,
+          votes: Map.from(_votes),
+          voters: Map.from(_voters),
+          topVotedWasCorrect: _topVotedWasCorrect,
+          topVotedIndex: _topVotedIndex,
+        ),
+      ),
+    );
+
+    if (mounted) _nextQuestion();
   }
 
   void _nextQuestion() {
@@ -130,13 +163,21 @@ class _GameScreenState extends State<GameScreen> {
     _startRound();
   }
 
-  void _addVote(String letter) {
+  void _addVote(String letter, {VoterInfo? voter}) {
     if (!_isVotingActive) return;
     final index = 'ABCD'.indexOf(letter);
     if (_hiddenOptions.contains(index)) return;
     setState(() {
       _votes[letter] = (_votes[letter] ?? 0) + 1;
+      if (voter != null) {
+        _voters[letter]!.add(voter);
+      }
     });
+  }
+
+  VoterInfo _generateTestVoter() {
+    _testUserCounter++;
+    return VoterInfo(username: 'User $_testUserCounter');
   }
 
   void _useFiftyFifty() {
@@ -164,7 +205,6 @@ class _GameScreenState extends State<GameScreen> {
     );
     await service.loadQuestions(locale.currentLang);
     if (!mounted) return;
-    setState(() {});
     _loadQuestions();
   }
 
@@ -603,7 +643,9 @@ class _GameScreenState extends State<GameScreen> {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: hidden ? null : () => _addVote(letter),
+      onTap: hidden
+          ? null
+          : () => _addVote(letter, voter: _generateTestVoter()),
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 400),
         opacity: hidden ? 0.15 : (dimOthers ? 0.35 : 1.0),
