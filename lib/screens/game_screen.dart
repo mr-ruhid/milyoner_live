@@ -165,15 +165,7 @@ class _GameScreenState extends State<GameScreen> {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.2),
-            radius: 1.4,
-            colors: [
-              Color(0xFF1E3A8A),
-              Color(0xFF0A1440),
-              Color(0xFF000000),
-            ],
-          ),
+          gradient: AppColors.gameBackground,
         ),
         child: SafeArea(
           child: Padding(
@@ -255,7 +247,7 @@ class _GameScreenState extends State<GameScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.4),
+            color: AppColors.overlay,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.gold.withOpacity(0.6)),
           ),
@@ -309,7 +301,7 @@ class _GameScreenState extends State<GameScreen> {
       height: 46,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.black.withOpacity(0.5),
+        color: AppColors.overlayStrong,
         border: Border.all(color: color, width: 2),
         boxShadow: [
           BoxShadow(color: color.withOpacity(0.4), blurRadius: 12),
@@ -338,8 +330,8 @@ class _GameScreenState extends State<GameScreen> {
   Widget _buildQuestionPanel() {
     return _hexPanel(
       height: 78,
-      borderColor: Colors.white.withOpacity(0.9),
-      fillColors: const [Color(0xFF1E40AF), Color(0xFF0F2166)],
+      borderColor: AppColors.hexBorder,
+      gradient: AppColors.hexPanelFill,
       child: Center(
         child: Text(
           _currentQuestion?.question ?? '',
@@ -365,30 +357,23 @@ class _GameScreenState extends State<GameScreen> {
   }) {
     final hidden = _hiddenOptions.contains(index);
     final isCorrect = _showResult && _currentQuestion?.correct == index;
-    final isTopWrong = _showResult &&
-        !_topVotedWasCorrect &&
-        _topVotedIndex == index;
+    final isTopWrong =
+        _showResult && !_topVotedWasCorrect && _topVotedIndex == index;
 
     final voteCount = _votes[letter] ?? 0;
     final double percent =
     totalVotes == 0 ? 0.0 : (voteCount / totalVotes * 100);
     final showPercent = totalVotes > 0;
 
-    Color borderColor = Colors.white.withOpacity(0.85);
-    List<Color> fill = const [Color(0xFF1E40AF), Color(0xFF0F2166)];
+    Color borderColor = AppColors.hexBorder;
+    Gradient fill = AppColors.hexPanelFill;
 
     if (_showResult && isCorrect) {
       borderColor = AppColors.correct;
-      fill = [
-        AppColors.correct.withOpacity(0.55),
-        AppColors.correct.withOpacity(0.25),
-      ];
+      fill = AppColors.hexPanelCorrect;
     } else if (_showResult && isTopWrong) {
       borderColor = AppColors.wrong;
-      fill = [
-        AppColors.wrong.withOpacity(0.55),
-        AppColors.wrong.withOpacity(0.25),
-      ];
+      fill = AppColors.hexPanelWrong;
     }
 
     final dimOthers = _showResult && !isCorrect && !isTopWrong;
@@ -400,7 +385,7 @@ class _GameScreenState extends State<GameScreen> {
         opacity: hidden ? 0.15 : (dimOthers ? 0.35 : 1.0),
         child: _hexPanel(
           borderColor: borderColor,
-          fillColors: fill,
+          gradient: fill,
           child: Stack(
             children: [
               if (showPercent)
@@ -441,8 +426,7 @@ class _GameScreenState extends State<GameScreen> {
                           style: GoogleFonts.orbitron(
                             fontSize: 13,
                             fontWeight: FontWeight.w900,
-                            color:
-                            _showResult && (isCorrect || isTopWrong)
+                            color: _showResult && (isCorrect || isTopWrong)
                                 ? AppColors.background
                                 : AppColors.gold,
                           ),
@@ -486,7 +470,7 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _hexPanel({
     required Widget child,
-    required List<Color> fillColors,
+    required Gradient gradient,
     required Color borderColor,
     double? height,
     double borderWidth = 2.0,
@@ -505,13 +489,7 @@ class _GameScreenState extends State<GameScreen> {
             child: ClipPath(
               clipper: _HexClipper(),
               child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: fillColors,
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
+                decoration: BoxDecoration(gradient: gradient),
                 child: child,
               ),
             ),
@@ -573,7 +551,7 @@ class _GameScreenState extends State<GameScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.4),
+            color: AppColors.overlay,
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
               color: enabled
