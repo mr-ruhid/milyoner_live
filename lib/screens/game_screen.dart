@@ -326,15 +326,15 @@ class _GameScreenState extends State<GameScreen> {
       children: List.generate(4, (i) {
         final letter = letters[i];
         final hidden = _hiddenOptions.contains(i);
-        final isCorrect =
-            _showResult && _currentQuestion?.correct == i;
+        final isCorrect = _showResult && _currentQuestion?.correct == i;
         final isTopWrong = _showResult &&
             !_topVotedWasCorrect &&
             _topVotedIndex == i;
 
         final voteCount = _votes[letter] ?? 0;
-        final percent =
-        totalVotes == 0 ? 0 : (voteCount / totalVotes * 100);
+        final double percent = totalVotes == 0
+            ? 0.0
+            : (voteCount / totalVotes * 100);
 
         return Expanded(
           child: Padding(
