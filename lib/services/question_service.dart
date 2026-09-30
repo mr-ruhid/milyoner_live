@@ -9,13 +9,16 @@ class QuestionService extends ChangeNotifier {
   List<Question> _questions = [];
   bool _isLoaded = false;
   String _currentLang = 'en';
+  bool _usedFallback = false;
 
   List<Question> get questions => _questions;
   bool get isLoaded => _isLoaded;
   String get currentLang => _currentLang;
+  bool get usedFallback => _usedFallback;
 
   Future<void> loadQuestions(String langCode) async {
     _currentLang = langCode;
+    _usedFallback = false;
     final prefs = await SharedPreferences.getInstance();
     final String? raw = prefs.getString('${_storageKey}_$langCode');
 
@@ -48,10 +51,30 @@ class QuestionService extends ChangeNotifier {
       await _save();
     } catch (e) {
       debugPrint('Asset load error for $langCode: $e');
-      _questions = [];
+      if (langCode != 'en') {
+        await _loadFallbackEnglish();
+      } else {
+        _questions = [];
+      }
     }
     _isLoaded = true;
     notifyListeners();
+  }
+
+  Future<void> _loadFallbackEnglish() async {
+    try {
+      final jsonString =
+      await rootBundle.loadString('assets/questions/questions_en.json');
+      final Map<String, dynamic> decoded = json.decode(jsonString);
+      final List<dynamic> list = decoded['questions'];
+      _questions = list
+          .map((e) => Question.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+      _usedFallback = true;
+    } catch (e) {
+      debugPrint('English fallback load error: $e');
+      _questions = [];
+    }
   }
 
   Future<void> _save() async {
@@ -112,10 +135,7 @@ class QuestionService extends ChangeNotifier {
         json.encode(list.map((q) => q.toJson()).toList()),
       );
     }
-    if (perLang.containsKey(_currentLang)) {
-      await loadQuestions(_currentLang);
-    }
-    notifyListeners();
+    await loadQuestions(_currentLang);
   }
 
   Future<Map<String, Question>> loadQuestionTranslations(String id) async {
@@ -163,7 +183,6 @@ class QuestionService extends ChangeNotifier {
       } catch (_) {}
     }
     await loadQuestions(_currentLang);
-    notifyListeners();
   }
 
   Future<void> resetToDefaults() async {
