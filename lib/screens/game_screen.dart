@@ -19,12 +19,15 @@ class _GameScreenState extends State<GameScreen> {
   int _currentIndex = 0;
   int _timeLeft = 30;
   Timer? _timer;
+  Timer? _autoNextTimer;
   bool _isVotingActive = false;
   bool _showResult = false;
   Map<String, int> _votes = {'A': 0, 'B': 0, 'C': 0, 'D': 0};
   List<int> _hiddenOptions = [];
   bool _fiftyFiftyUsed = false;
   bool _revealUsed = false;
+  int _topVotedIndex = -1;
+  bool _topVotedWasCorrect = false;
 
   @override
   void initState() {
@@ -35,6 +38,7 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _autoNextTimer?.cancel();
     super.dispose();
   }
 
@@ -54,6 +58,7 @@ class _GameScreenState extends State<GameScreen> {
 
   void _startRound() {
     _timer?.cancel();
+    _autoNextTimer?.cancel();
     setState(() {
       _timeLeft = 30;
       _isVotingActive = true;
@@ -62,6 +67,8 @@ class _GameScreenState extends State<GameScreen> {
       _hiddenOptions = [];
       _fiftyFiftyUsed = false;
       _revealUsed = false;
+      _topVotedIndex = -1;
+      _topVotedWasCorrect = false;
     });
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) return;
@@ -75,13 +82,33 @@ class _GameScreenState extends State<GameScreen> {
 
   void _revealResult() {
     _timer?.cancel();
+
+    final letters = ['A', 'B', 'C', 'D'];
+    int topIdx = -1;
+    int topCount = -1;
+    for (int i = 0; i < 4; i++) {
+      final c = _votes[letters[i]] ?? 0;
+      if (c > topCount) {
+        topCount = c;
+        topIdx = i;
+      }
+    }
+
     setState(() {
       _isVotingActive = false;
       _showResult = true;
+      _topVotedIndex = topCount > 0 ? topIdx : -1;
+      _topVotedWasCorrect =
+          _topVotedIndex == _currentQuestion?.correct && topCount > 0;
+    });
+
+    _autoNextTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) _nextQuestion();
     });
   }
 
   void _nextQuestion() {
+    _autoNextTimer?.cancel();
     if (_currentIndex + 1 >= _questions.length) {
       _currentIndex = 0;
     } else {
@@ -132,20 +159,32 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              _buildHeader(locale),
-              const SizedBox(height: 16),
-              _buildQuestionPanel(locale),
-              const SizedBox(height: 16),
-              Expanded(child: _buildAnswers()),
-              const SizedBox(height: 12),
-              _buildBottomBar(locale),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -0.3),
+            radius: 1.4,
+            colors: [
+              Color(0xFF0F1B4C),
+              Color(0xFF060920),
+              Color(0xFF000000),
             ],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildHeader(locale),
+                const SizedBox(height: 12),
+                _buildQuestionPanel(),
+                const SizedBox(height: 12),
+                Expanded(child: _buildAnswers(locale)),
+                const SizedBox(height: 10),
+                _buildBottomBar(locale),
+              ],
+            ),
           ),
         ),
       ),
@@ -154,160 +193,252 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _buildHeader(LocaleService locale) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          locale.t('app_title'),
-          style: GoogleFonts.orbitron(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: AppColors.gold,
-            letterSpacing: 3,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.panelBlue.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.gold.withOpacity(0.5)),
+          ),
+          child: Text(
+            '${_currentIndex + 1}/${_questions.length}',
+            style: GoogleFonts.orbitron(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppColors.gold,
+            ),
           ),
         ),
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.panelBlue,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '${_currentIndex + 1}/${_questions.length}',
-                style: GoogleFonts.orbitron(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.gold,
-                ),
+        const Spacer(),
+        if (_showResult)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: _topVotedWasCorrect
+                  ? AppColors.correct.withOpacity(0.2)
+                  : AppColors.wrong.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _topVotedWasCorrect
+                    ? AppColors.correct
+                    : AppColors.wrong,
               ),
             ),
-            const SizedBox(width: 10),
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: _timeLeft <= 10 ? AppColors.wrong : AppColors.panelBlue,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.gold, width: 2),
-              ),
-              child: Center(
-                child: Text(
-                  '$_timeLeft',
-                  style: GoogleFonts.orbitron(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+            child: Text(
+              _topVotedWasCorrect
+                  ? locale.t('correct')
+                  : locale.t('wrong'),
+              style: GoogleFonts.orbitron(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: _topVotedWasCorrect
+                    ? AppColors.correct
+                    : AppColors.wrong,
               ),
             ),
-          ],
-        ),
+          ),
+        const SizedBox(width: 12),
+        _buildTimer(),
       ],
     );
   }
 
-  Widget _buildQuestionPanel(LocaleService locale) {
+  Widget _buildTimer() {
+    final isLow = _timeLeft <= 10;
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      width: 52,
+      height: 52,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.panelBlue, AppColors.panelDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: isLow
+              ? [AppColors.wrong, AppColors.wrong.withOpacity(0.6)]
+              : [AppColors.panelBlue, AppColors.panelDark],
         ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.gold, width: 2),
-      ),
-      child: Column(
-        children: [
-          Text(
-            '${locale.t('reward')}: ${_currentQuestion?.reward ?? 0}',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: AppColors.gold,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _currentQuestion?.question ?? '',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+        border: Border.all(
+          color: isLow ? AppColors.wrong : AppColors.gold,
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (isLow ? AppColors.wrong : AppColors.gold)
+                .withOpacity(0.4),
+            blurRadius: 12,
           ),
         ],
+      ),
+      child: Center(
+        child: Text(
+          '$_timeLeft',
+          style: GoogleFonts.orbitron(
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+            color: AppColors.textPrimary,
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildAnswers() {
+  Widget _buildQuestionPanel() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF152A6B), Color(0xFF0A1A4A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(40),
+        border: Border.all(
+          color: AppColors.gold.withOpacity(0.8),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Text(
+        _currentQuestion?.question ?? '',
+        textAlign: TextAlign.center,
+        style: GoogleFonts.poppins(
+          fontSize: 19,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+          height: 1.4,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnswers(LocaleService locale) {
     final options = _currentQuestion?.options ?? [];
     final letters = ['A', 'B', 'C', 'D'];
-    final colors = [
-      AppColors.optionA,
-      AppColors.optionB,
-      AppColors.optionC,
-      AppColors.optionD,
-    ];
     final totalVotes = _votes.values.fold<int>(0, (a, b) => a + b);
 
     return Column(
       children: List.generate(4, (i) {
         final letter = letters[i];
         final hidden = _hiddenOptions.contains(i);
-        final isCorrect = _showResult && _currentQuestion?.correct == i;
-
-        Color baseColor = colors[i];
-        if (_showResult && isCorrect) baseColor = AppColors.correct;
+        final isCorrect =
+            _showResult && _currentQuestion?.correct == i;
+        final isTopWrong = _showResult &&
+            !_topVotedWasCorrect &&
+            _topVotedIndex == i;
 
         final voteCount = _votes[letter] ?? 0;
-        final percent = totalVotes == 0 ? 0 : (voteCount / totalVotes * 100);
+        final percent =
+        totalVotes == 0 ? 0 : (voteCount / totalVotes * 100);
 
         return Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5),
+            padding: const EdgeInsets.symmetric(vertical: 4),
             child: GestureDetector(
               onTap: hidden ? null : () => _addVote(letter),
               child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 300),
-                opacity: hidden ? 0.15 : 1.0,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 12,
+                duration: const Duration(milliseconds: 400),
+                opacity: hidden
+                    ? 0.15
+                    : (_showResult && !isCorrect && !isTopWrong)
+                    ? 0.35
+                    : 1.0,
+                child: _buildAnswerButton(
+                  letter: letter,
+                  text: i < options.length ? options[i] : '',
+                  isCorrect: isCorrect,
+                  isTopWrong: isTopWrong,
+                  percent: percent,
+                  showPercent: totalVotes > 0,
+                  showResult: _showResult,
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildAnswerButton({
+    required String letter,
+    required String text,
+    required bool isCorrect,
+    required bool isTopWrong,
+    required double percent,
+    required bool showPercent,
+    required bool showResult,
+  }) {
+    Color borderColor = AppColors.gold.withOpacity(0.6);
+    Color fillTop = const Color(0xFF1E2A5A);
+    Color fillBottom = const Color(0xFF0F1B3D);
+
+    if (showResult && isCorrect) {
+      borderColor = AppColors.correct;
+      fillTop = AppColors.correct.withOpacity(0.35);
+      fillBottom = AppColors.correct.withOpacity(0.15);
+    } else if (showResult && isTopWrong) {
+      borderColor = AppColors.wrong;
+      fillTop = AppColors.wrong.withOpacity(0.35);
+      fillBottom = AppColors.wrong.withOpacity(0.15);
+    }
+
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [fillTop, fillBottom],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: BorderRadius.circular(40),
+            border: Border.all(color: borderColor, width: 2),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(40),
+            child: Stack(
+              children: [
+                if (showPercent)
+                  Positioned.fill(
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: (percent / 100).clamp(0.0, 1.0),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 500),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              borderColor.withOpacity(0.25),
+                              borderColor.withOpacity(0.05),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        baseColor.withOpacity(0.9),
-                        baseColor.withOpacity(0.6),
-                      ],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: AppColors.gold.withOpacity(0.5),
-                      width: 1.5,
-                    ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
                   child: Row(
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
-                          color: AppColors.background.withOpacity(0.4),
                           shape: BoxShape.circle,
+                          color: showResult && (isCorrect || isTopWrong)
+                              ? borderColor
+                              : AppColors.background.withOpacity(0.6),
                           border: Border.all(
-                            color: AppColors.gold,
+                            color: borderColor,
                             width: 2,
                           ),
                         ),
@@ -315,9 +446,11 @@ class _GameScreenState extends State<GameScreen> {
                           child: Text(
                             letter,
                             style: GoogleFonts.orbitron(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.gold,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: showResult && (isCorrect || isTopWrong)
+                                  ? AppColors.background
+                                  : AppColors.gold,
                             ),
                           ),
                         ),
@@ -325,41 +458,34 @@ class _GameScreenState extends State<GameScreen> {
                       const SizedBox(width: 14),
                       Expanded(
                         child: Text(
-                          i < options.length ? options[i] : '',
+                          text,
                           style: GoogleFonts.poppins(
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
                           ),
                         ),
                       ),
-                      if (totalVotes > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.background.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
+                      if (showPercent)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 12),
                           child: Text(
                             '${percent.toStringAsFixed(0)}%',
                             style: GoogleFonts.orbitron(
-                              fontSize: 12,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: borderColor,
                             ),
                           ),
                         ),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
           ),
-        );
-      }),
+        ),
+      ],
     );
   }
 
@@ -406,31 +532,40 @@ class _GameScreenState extends State<GameScreen> {
       onTap: enabled ? onTap : null,
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 200),
-        opacity: enabled ? 1.0 : 0.4,
+        opacity: enabled ? 1.0 : 0.35,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.panelDark,
-            borderRadius: BorderRadius.circular(12),
+            color: AppColors.panelDark.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: enabled ? AppColors.gold : AppColors.panelBlue,
+              color: enabled
+                  ? AppColors.gold.withOpacity(0.8)
+                  : AppColors.panelBlue,
               width: 1.5,
             ),
           ),
-          child: Column(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
                 color: enabled ? AppColors.gold : AppColors.textSecondary,
-                size: 20,
+                size: 16,
               ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: GoogleFonts.poppins(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: enabled ? AppColors.gold : AppColors.textSecondary,
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: enabled
+                        ? AppColors.gold
+                        : AppColors.textSecondary,
+                  ),
                 ),
               ),
             ],
