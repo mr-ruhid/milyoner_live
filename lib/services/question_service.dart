@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/question.dart';
 
@@ -7,23 +8,47 @@ class QuestionService extends ChangeNotifier {
   static const String _storageKey = 'user_questions';
   List<Question> _questions = [];
   bool _isLoaded = false;
+  String _currentLang = 'en';
 
   List<Question> get questions => _questions;
   bool get isLoaded => _isLoaded;
+  String get currentLang => _currentLang;
 
-  Future<void> loadQuestions() async {
+  Future<void> loadQuestions(String langCode) async {
+    _currentLang = langCode;
     final prefs = await SharedPreferences.getInstance();
-    final String? raw = prefs.getString(_storageKey);
+    final String? raw = prefs.getString('${_storageKey}_$langCode');
+
     if (raw != null && raw.isNotEmpty) {
       try {
         final List<dynamic> decoded = json.decode(raw);
         _questions = decoded
             .map((e) => Question.fromJson(Map<String, dynamic>.from(e)))
             .toList();
+        _isLoaded = true;
+        notifyListeners();
+        return;
       } catch (e) {
         debugPrint('Question load error: $e');
-        _questions = [];
       }
+    }
+
+    await _loadFromAssets(langCode);
+  }
+
+  Future<void> _loadFromAssets(String langCode) async {
+    try {
+      final jsonString =
+      await rootBundle.loadString('assets/questions/questions_$langCode.json');
+      final Map<String, dynamic> decoded = json.decode(jsonString);
+      final List<dynamic> list = decoded['questions'];
+      _questions = list
+          .map((e) => Question.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+      await _save();
+    } catch (e) {
+      debugPrint('Asset load error for $langCode: $e');
+      _questions = [];
     }
     _isLoaded = true;
     notifyListeners();
@@ -34,7 +59,7 @@ class QuestionService extends ChangeNotifier {
     final String raw = json.encode(
       _questions.map((q) => q.toJson()).toList(),
     );
-    await prefs.setString(_storageKey, raw);
+    await prefs.setString('${_storageKey}_$_currentLang', raw);
   }
 
   Future<void> addQuestion(Question question) async {
@@ -58,14 +83,10 @@ class QuestionService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> clearAll() async {
-    _questions.clear();
-    await _save();
-    notifyListeners();
-  }
-
-  List<Question> getQuestionsForLanguage(String lang) {
-    return _questions.where((q) => q.hasLanguage(lang)).toList();
+  Future<void> resetToDefaults() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('${_storageKey}_$_currentLang');
+    await _loadFromAssets(_currentLang);
   }
 
   String generateId() {
