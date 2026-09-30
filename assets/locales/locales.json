@@ -1,0 +1,8 @@
+{
+  "languages": [
+    {"code": "az", "flag": "🇦🇿", "name": "Azərbaycan"},
+    {"code": "en", "flag": "🇬🇧", "name": "English"},
+    {"code": "tr", "flag": "🇹🇷", "name": "Türkçe"},
+    {"code": "ru", "flag": "🇷🇺", "name": "Русский"}
+  ]
+}
