@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
@@ -82,7 +83,6 @@ class _GameScreenState extends State<GameScreen> {
 
   void _revealResult() {
     _timer?.cancel();
-
     final letters = ['A', 'B', 'C', 'D'];
     int topIdx = -1;
     int topCount = -1;
@@ -158,30 +158,88 @@ class _GameScreenState extends State<GameScreen> {
       );
     }
 
+    final options = _currentQuestion?.options ?? [];
+    final letters = ['A', 'B', 'C', 'D'];
+    final totalVotes = _votes.values.fold<int>(0, (a, b) => a + b);
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: RadialGradient(
-            center: Alignment(0, -0.3),
+            center: Alignment(0, -0.2),
             radius: 1.4,
             colors: [
-              Color(0xFF0F1B4C),
-              Color(0xFF060920),
+              Color(0xFF1E3A8A),
+              Color(0xFF0A1440),
               Color(0xFF000000),
             ],
           ),
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Column(
               children: [
-                _buildHeader(locale),
+                _buildTopBar(locale),
                 const SizedBox(height: 12),
+                _buildLogo(),
+                const SizedBox(height: 20),
                 _buildQuestionPanel(),
-                const SizedBox(height: 12),
-                Expanded(child: _buildAnswers(locale)),
-                const SizedBox(height: 10),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildAnswer(
+                                letter: letters[0],
+                                text: options.isNotEmpty ? options[0] : '',
+                                index: 0,
+                                totalVotes: totalVotes,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: _buildAnswer(
+                                letter: letters[1],
+                                text: options.length > 1 ? options[1] : '',
+                                index: 1,
+                                totalVotes: totalVotes,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildAnswer(
+                                letter: letters[2],
+                                text: options.length > 2 ? options[2] : '',
+                                index: 2,
+                                totalVotes: totalVotes,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: _buildAnswer(
+                                letter: letters[3],
+                                text: options.length > 3 ? options[3] : '',
+                                index: 3,
+                                totalVotes: totalVotes,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
                 _buildBottomBar(locale),
               ],
             ),
@@ -191,20 +249,20 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _buildHeader(LocaleService locale) {
+  Widget _buildTopBar(LocaleService locale) {
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.panelBlue.withOpacity(0.6),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.gold.withOpacity(0.5)),
+            color: Colors.black.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.gold.withOpacity(0.6)),
           ),
           child: Text(
             '${_currentIndex + 1}/${_questions.length}',
             style: GoogleFonts.orbitron(
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
               color: AppColors.gold,
             ),
@@ -215,10 +273,11 @@ class _GameScreenState extends State<GameScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
-              color: _topVotedWasCorrect
-                  ? AppColors.correct.withOpacity(0.2)
-                  : AppColors.wrong.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
+              color: (_topVotedWasCorrect
+                  ? AppColors.correct
+                  : AppColors.wrong)
+                  .withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: _topVotedWasCorrect
                     ? AppColors.correct
@@ -226,11 +285,9 @@ class _GameScreenState extends State<GameScreen> {
               ),
             ),
             child: Text(
-              _topVotedWasCorrect
-                  ? locale.t('correct')
-                  : locale.t('wrong'),
+              _topVotedWasCorrect ? locale.t('correct') : locale.t('wrong'),
               style: GoogleFonts.orbitron(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
                 color: _topVotedWasCorrect
                     ? AppColors.correct
@@ -238,7 +295,7 @@ class _GameScreenState extends State<GameScreen> {
               ),
             ),
           ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         _buildTimer(),
       ],
     );
@@ -246,33 +303,23 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _buildTimer() {
     final isLow = _timeLeft <= 10;
+    final color = isLow ? AppColors.wrong : AppColors.gold;
     return Container(
-      width: 52,
-      height: 52,
+      width: 46,
+      height: 46,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: isLow
-              ? [AppColors.wrong, AppColors.wrong.withOpacity(0.6)]
-              : [AppColors.panelBlue, AppColors.panelDark],
-        ),
-        border: Border.all(
-          color: isLow ? AppColors.wrong : AppColors.gold,
-          width: 2,
-        ),
+        color: Colors.black.withOpacity(0.5),
+        border: Border.all(color: color, width: 2),
         boxShadow: [
-          BoxShadow(
-            color: (isLow ? AppColors.wrong : AppColors.gold)
-                .withOpacity(0.4),
-            blurRadius: 12,
-          ),
+          BoxShadow(color: color.withOpacity(0.4), blurRadius: 12),
         ],
       ),
       child: Center(
         child: Text(
           '$_timeLeft',
           style: GoogleFonts.orbitron(
-            fontSize: 20,
+            fontSize: 17,
             fontWeight: FontWeight.w900,
             color: AppColors.textPrimary,
           ),
@@ -281,212 +328,202 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  Widget _buildLogo() {
+    return SizedBox(
+      height: 90,
+      child: SvgPicture.asset('assets/logo/logo.svg'),
+    );
+  }
+
   Widget _buildQuestionPanel() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF152A6B), Color(0xFF0A1A4A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(40),
-        border: Border.all(
-          color: AppColors.gold.withOpacity(0.8),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.5),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+    return _hexPanel(
+      height: 78,
+      borderColor: Colors.white.withOpacity(0.9),
+      fillColors: const [Color(0xFF1E40AF), Color(0xFF0F2166)],
+      child: Center(
+        child: Text(
+          _currentQuestion?.question ?? '',
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
+            height: 1.3,
           ),
-        ],
-      ),
-      child: Text(
-        _currentQuestion?.question ?? '',
-        textAlign: TextAlign.center,
-        style: GoogleFonts.poppins(
-          fontSize: 19,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
-          height: 1.4,
         ),
       ),
     );
   }
 
-  Widget _buildAnswers(LocaleService locale) {
-    final options = _currentQuestion?.options ?? [];
-    final letters = ['A', 'B', 'C', 'D'];
-    final totalVotes = _votes.values.fold<int>(0, (a, b) => a + b);
-
-    return Column(
-      children: List.generate(4, (i) {
-        final letter = letters[i];
-        final hidden = _hiddenOptions.contains(i);
-        final isCorrect = _showResult && _currentQuestion?.correct == i;
-        final isTopWrong = _showResult &&
-            !_topVotedWasCorrect &&
-            _topVotedIndex == i;
-
-        final voteCount = _votes[letter] ?? 0;
-        final double percent = totalVotes == 0
-            ? 0.0
-            : (voteCount / totalVotes * 100);
-
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: GestureDetector(
-              onTap: hidden ? null : () => _addVote(letter),
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 400),
-                opacity: hidden
-                    ? 0.15
-                    : (_showResult && !isCorrect && !isTopWrong)
-                    ? 0.35
-                    : 1.0,
-                child: _buildAnswerButton(
-                  letter: letter,
-                  text: i < options.length ? options[i] : '',
-                  isCorrect: isCorrect,
-                  isTopWrong: isTopWrong,
-                  percent: percent,
-                  showPercent: totalVotes > 0,
-                  showResult: _showResult,
-                ),
-              ),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-
-  Widget _buildAnswerButton({
+  Widget _buildAnswer({
     required String letter,
     required String text,
-    required bool isCorrect,
-    required bool isTopWrong,
-    required double percent,
-    required bool showPercent,
-    required bool showResult,
+    required int index,
+    required int totalVotes,
   }) {
-    Color borderColor = AppColors.gold.withOpacity(0.6);
-    Color fillTop = const Color(0xFF1E2A5A);
-    Color fillBottom = const Color(0xFF0F1B3D);
+    final hidden = _hiddenOptions.contains(index);
+    final isCorrect = _showResult && _currentQuestion?.correct == index;
+    final isTopWrong = _showResult &&
+        !_topVotedWasCorrect &&
+        _topVotedIndex == index;
 
-    if (showResult && isCorrect) {
+    final voteCount = _votes[letter] ?? 0;
+    final double percent =
+    totalVotes == 0 ? 0.0 : (voteCount / totalVotes * 100);
+    final showPercent = totalVotes > 0;
+
+    Color borderColor = Colors.white.withOpacity(0.85);
+    List<Color> fill = const [Color(0xFF1E40AF), Color(0xFF0F2166)];
+
+    if (_showResult && isCorrect) {
       borderColor = AppColors.correct;
-      fillTop = AppColors.correct.withOpacity(0.35);
-      fillBottom = AppColors.correct.withOpacity(0.15);
-    } else if (showResult && isTopWrong) {
+      fill = [
+        AppColors.correct.withOpacity(0.55),
+        AppColors.correct.withOpacity(0.25),
+      ];
+    } else if (_showResult && isTopWrong) {
       borderColor = AppColors.wrong;
-      fillTop = AppColors.wrong.withOpacity(0.35);
-      fillBottom = AppColors.wrong.withOpacity(0.15);
+      fill = [
+        AppColors.wrong.withOpacity(0.55),
+        AppColors.wrong.withOpacity(0.25),
+      ];
     }
 
-    return Stack(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [fillTop, fillBottom],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: borderColor, width: 2),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(40),
-            child: Stack(
-              children: [
-                if (showPercent)
-                  Positioned.fill(
-                    child: FractionallySizedBox(
+    final dimOthers = _showResult && !isCorrect && !isTopWrong;
+
+    return GestureDetector(
+      onTap: hidden ? null : () => _addVote(letter),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 400),
+        opacity: hidden ? 0.15 : (dimOthers ? 0.35 : 1.0),
+        child: _hexPanel(
+          borderColor: borderColor,
+          fillColors: fill,
+          child: Stack(
+            children: [
+              if (showPercent)
+                Positioned.fill(
+                  child: ClipPath(
+                    clipper: _HexClipper(),
+                    child: Align(
                       alignment: Alignment.centerLeft,
-                      widthFactor: (percent / 100).clamp(0.0, 1.0),
-                      child: AnimatedContainer(
+                      child: AnimatedFractionallySizedBox(
                         duration: const Duration(milliseconds: 500),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              borderColor.withOpacity(0.25),
-                              borderColor.withOpacity(0.05),
-                            ],
-                          ),
+                        widthFactor: (percent / 100).clamp(0.0, 1.0),
+                        heightFactor: 1.0,
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          color: borderColor.withOpacity(0.18),
                         ),
                       ),
                     ),
                   ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: showResult && (isCorrect || isTopWrong)
-                              ? borderColor
-                              : AppColors.background.withOpacity(0.6),
-                          border: Border.all(
-                            color: borderColor,
-                            width: 2,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            letter,
-                            style: GoogleFonts.orbitron(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              color: showResult && (isCorrect || isTopWrong)
-                                  ? AppColors.background
-                                  : AppColors.gold,
-                            ),
-                          ),
-                        ),
+                ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _showResult && (isCorrect || isTopWrong)
+                            ? borderColor
+                            : Colors.transparent,
+                        border: Border.all(color: borderColor, width: 1.5),
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
+                      child: Center(
                         child: Text(
-                          text,
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                          letter,
+                          style: GoogleFonts.orbitron(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                            color:
+                            _showResult && (isCorrect || isTopWrong)
+                                ? AppColors.background
+                                : AppColors.gold,
                           ),
                         ),
                       ),
-                      if (showPercent)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: Text(
-                            '${percent.toStringAsFixed(0)}%',
-                            style: GoogleFonts.orbitron(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: borderColor,
-                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    if (showPercent)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Text(
+                          '${percent.toStringAsFixed(0)}%',
+                          style: GoogleFonts.orbitron(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: borderColor,
                           ),
                         ),
-                    ],
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _hexPanel({
+    required Widget child,
+    required List<Color> fillColors,
+    required Color borderColor,
+    double? height,
+    double borderWidth = 2.0,
+  }) {
+    final content = Stack(
+      children: [
+        Positioned.fill(
+          child: ClipPath(
+            clipper: _HexClipper(),
+            child: Container(color: borderColor),
+          ),
+        ),
+        Positioned.fill(
+          child: Padding(
+            padding: EdgeInsets.all(borderWidth),
+            child: ClipPath(
+              clipper: _HexClipper(),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: fillColors,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                   ),
                 ),
-              ],
+                child: child,
+              ),
             ),
           ),
         ),
       ],
     );
+
+    if (height != null) {
+      return SizedBox(height: height, child: content);
+    }
+    return content;
   }
 
   Widget _buildBottomBar(LocaleService locale) {
@@ -536,7 +573,7 @@ class _GameScreenState extends State<GameScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.panelDark.withOpacity(0.7),
+            color: Colors.black.withOpacity(0.4),
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
               color: enabled
@@ -574,4 +611,22 @@ class _GameScreenState extends State<GameScreen> {
       ),
     );
   }
+}
+
+class _HexClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final p = size.height * 0.45;
+    return Path()
+      ..moveTo(p, 0)
+      ..lineTo(size.width - p, 0)
+      ..lineTo(size.width, size.height / 2)
+      ..lineTo(size.width - p, size.height)
+      ..lineTo(p, size.height)
+      ..lineTo(0, size.height / 2)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
