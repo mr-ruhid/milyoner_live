@@ -8,6 +8,11 @@ import '../services/question_service.dart';
 import 'game_screen.dart';
 import 'manage_questions_screen.dart';
 
+// Millionaire-style palette
+const Color _kBorder = Color(0xFFD9D4C3);
+const Color _kBlueTop = Color(0xFF0B45A8);
+const Color _kBlueBottom = Color(0xFF041A52);
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -50,9 +55,9 @@ class _HomeScreenState extends State<HomeScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF060920),
-              Color(0xFF0A0E27),
-              Color(0xFF000000),
+              Color(0xFF061340),
+              Color(0xFF0A1A5C),
+              Color(0xFF1A0F5E),
             ],
           ),
         ),
@@ -60,20 +65,20 @@ class _HomeScreenState extends State<HomeScreen>
           children: [
             _buildAmbientGlow(),
             SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 22),
-                child: Column(
-                  children: [
-                    _buildTopBar(locale),
-                    const Spacer(flex: 2),
-                    _buildLogo(),
-                    const Spacer(flex: 3),
-                    _buildPrimaryButton(context, locale),
-                    const SizedBox(height: 12),
-                    _buildSecondaryRow(context, locale),
-                    const SizedBox(height: 20),
-                  ],
-                ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 22),
+                    child: _buildTopBar(locale),
+                  ),
+                  const Spacer(flex: 2),
+                  _buildLogo(),
+                  const Spacer(flex: 2),
+                  _buildPrimaryButton(context, locale),
+                  const SizedBox(height: 14),
+                  _buildSecondaryRow(context, locale),
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
           ],
@@ -96,7 +101,8 @@ class _HomeScreenState extends State<HomeScreen>
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  AppColors.gold.withOpacity(0.08 * _pulseAnimation.value),
+                  const Color(0xFF1E5BD6)
+                      .withOpacity(0.25 * _pulseAnimation.value),
                   Colors.transparent,
                 ],
               ),
@@ -149,7 +155,7 @@ class _HomeScreenState extends State<HomeScreen>
           style: GoogleFonts.orbitron(
             fontSize: 10,
             fontWeight: FontWeight.bold,
-            color: AppColors.textSecondary,
+            color: Colors.white70,
             letterSpacing: 3,
           ),
         ),
@@ -168,12 +174,13 @@ class _HomeScreenState extends State<HomeScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.panelDark.withOpacity(0.7),
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: AppColors.panelBlue,
-            width: 1.2,
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_kBlueTop, _kBlueBottom],
           ),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: _kBorder, width: 1.5),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -188,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen>
               style: GoogleFonts.orbitron(
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: Colors.white,
                 letterSpacing: 1.5,
               ),
             ),
@@ -214,15 +221,13 @@ class _HomeScreenState extends State<HomeScreen>
           animation: _pulseAnimation,
           builder: (_, __) {
             return Container(
-              width: 340,
-              height: 340,
+              width: 320,
+              height: 320,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.gold.withOpacity(
-                      0.3 * _pulseAnimation.value,
-                    ),
+                    AppColors.gold.withOpacity(0.25 * _pulseAnimation.value),
                     Colors.transparent,
                   ],
                 ),
@@ -232,136 +237,99 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         SvgPicture.asset(
           'assets/logo/logo.svg',
-          width: 280,
-          height: 280,
+          width: 260,
+          height: 260,
         ),
       ],
     );
   }
 
+  // Wide "question bar" style button, lines run to the screen edges
   Widget _buildPrimaryButton(BuildContext context, LocaleService locale) {
-    return GestureDetector(
+    return _HexButton(
+      height: 70,
+      leftExtend: 22,
+      rightExtend: 22,
       onTap: () => _startGame(context, locale),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.gold, AppColors.goldDark],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.play_circle_fill_rounded,
+            color: AppColors.gold,
+            size: 28,
           ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.gold.withOpacity(0.35),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.play_circle_fill_rounded,
-              color: AppColors.background,
-              size: 26,
-            ),
-            const SizedBox(width: 10),
-            Text(
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
               locale.t('start_game'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.orbitron(
                 fontSize: 16,
                 fontWeight: FontWeight.w900,
-                color: AppColors.background,
+                color: Colors.white,
                 letterSpacing: 2,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
+  // Two "answer" style buttons side by side, joined by a short line
   Widget _buildSecondaryRow(BuildContext context, LocaleService locale) {
     return Row(
       children: [
         Expanded(
-          child: _buildOutlineButton(
-            icon: Icons.edit_note_rounded,
-            label: locale.t('manage_questions'),
+          child: _HexButton(
+            height: 58,
+            leftExtend: 22,
+            rightExtend: 8,
             onTap: () => _openManage(context, locale),
+            child: _buildButtonContent(
+              icon: Icons.edit_note_rounded,
+              label: locale.t('manage_questions'),
+            ),
           ),
         ),
-        const SizedBox(width: 10),
-        _buildIconOnlyButton(
-          icon: Icons.refresh_rounded,
-          onTap: () => _confirmReset(context),
+        Expanded(
+          child: _HexButton(
+            height: 58,
+            leftExtend: 8,
+            rightExtend: 22,
+            onTap: () => _confirmReset(context),
+            child: _buildButtonContent(
+              icon: Icons.refresh_rounded,
+              label: 'Reset',
+            ),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildOutlineButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: AppColors.panelDark.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: AppColors.panelBlue,
-            width: 1.2,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: AppColors.gold, size: 18),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                  letterSpacing: 0.5,
-                ),
-              ),
+  Widget _buildButtonContent({required IconData icon, required String label}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, color: AppColors.gold, size: 18),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              letterSpacing: 0.5,
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIconOnlyButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.panelDark.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: AppColors.panelBlue,
-            width: 1.2,
           ),
         ),
-        child: Icon(icon, color: AppColors.gold, size: 18),
-      ),
+      ],
     );
   }
 
@@ -388,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen>
   void _confirmReset(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.panelDark,
+      backgroundColor: const Color(0xFF071A52),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -402,7 +370,7 @@ class _HomeScreenState extends State<HomeScreen>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.panelBlue,
+                  color: _kBorder,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -418,7 +386,7 @@ class _HomeScreenState extends State<HomeScreen>
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 6),
@@ -427,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen>
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: Colors.white70,
                 ),
               ),
               const SizedBox(height: 20),
@@ -440,15 +408,13 @@ class _HomeScreenState extends State<HomeScreen>
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(
-                            color: AppColors.panelBlue,
-                          ),
+                          side: const BorderSide(color: _kBorder),
                         ),
                       ),
                       child: Text(
                         'Cancel',
                         style: GoogleFonts.poppins(
-                          color: AppColors.textSecondary,
+                          color: Colors.white70,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -471,7 +437,7 @@ class _HomeScreenState extends State<HomeScreen>
                       child: Text(
                         'Reset',
                         style: GoogleFonts.poppins(
-                          color: AppColors.textPrimary,
+                          color: Colors.white,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -485,4 +451,108 @@ class _HomeScreenState extends State<HomeScreen>
       },
     );
   }
+}
+
+/// Pointed-end (hexagon-like) button with horizontal connector lines,
+/// like the answer bars in "Who Wants to Be a Millionaire".
+class _HexButton extends StatelessWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  final double height;
+  final double leftExtend;
+  final double rightExtend;
+
+  const _HexButton({
+    required this.child,
+    required this.onTap,
+    required this.height,
+    required this.leftExtend,
+    required this.rightExtend,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        height: height,
+        child: CustomPaint(
+          painter: _HexPainter(leftExtend, rightExtend),
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: leftExtend + 24,
+              right: rightExtend + 24,
+            ),
+            child: Center(child: child),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HexPainter extends CustomPainter {
+  final double leftExtend;
+  final double rightExtend;
+
+  _HexPainter(this.leftExtend, this.rightExtend);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final h = size.height;
+    final midY = h / 2;
+    final slant = h * 0.42;
+    const stroke = 2.0;
+
+    final l = leftExtend;
+    final r = size.width - rightExtend;
+
+    final path = Path()
+      ..moveTo(l, midY)
+      ..lineTo(l + slant, stroke / 2)
+      ..lineTo(r - slant, stroke / 2)
+      ..lineTo(r, midY)
+      ..lineTo(r - slant, h - stroke / 2)
+      ..lineTo(l + slant, h - stroke / 2)
+      ..close();
+
+    // Soft shadow
+    canvas.drawPath(
+      path.shift(const Offset(0, 3)),
+      Paint()
+        ..color = Colors.black.withOpacity(0.35)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+    );
+
+    // Blue gradient fill
+    final fill = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [_kBlueTop, _kBlueBottom],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, h));
+    canvas.drawPath(path, fill);
+
+    // Cream border
+    final border = Paint()
+      ..color = _kBorder
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(path, border);
+
+    // Connector lines
+    final line = Paint()
+      ..color = _kBorder
+      ..strokeWidth = stroke;
+    if (l > 0) canvas.drawLine(Offset(0, midY), Offset(l, midY), line);
+    if (rightExtend > 0) {
+      canvas.drawLine(Offset(r, midY), Offset(size.width, midY), line);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _HexPainter old) =>
+      old.leftExtend != leftExtend || old.rightExtend != rightExtend;
 }
