@@ -90,6 +90,15 @@ class _GameScreenState extends State<GameScreen> {
     _startRound();
   }
 
+  void _addVote(String letter) {
+    if (!_isVotingActive) return;
+    final index = 'ABCD'.indexOf(letter);
+    if (_hiddenOptions.contains(index)) return;
+    setState(() {
+      _votes[letter] = (_votes[letter] ?? 0) + 1;
+    });
+  }
+
   void _useFiftyFifty() {
     if (_fiftyFiftyUsed || _currentQuestion == null || !_isVotingActive) return;
     final correct = _currentQuestion!.correct;
@@ -114,28 +123,9 @@ class _GameScreenState extends State<GameScreen> {
       return Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                locale.t('add_question'),
-                style: GoogleFonts.poppins(
-                  color: AppColors.textSecondary,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.gold,
-                ),
-                child: Text(
-                  locale.t('cancel'),
-                  style: GoogleFonts.poppins(color: AppColors.background),
-                ),
-              ),
-            ],
+          child: Text(
+            locale.t('add_question'),
+            style: GoogleFonts.poppins(color: AppColors.textSecondary),
           ),
         ),
       );
@@ -178,10 +168,7 @@ class _GameScreenState extends State<GameScreen> {
         Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.panelBlue,
                 borderRadius: BorderRadius.circular(10),
@@ -200,9 +187,7 @@ class _GameScreenState extends State<GameScreen> {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: _timeLeft <= 10
-                    ? AppColors.wrong
-                    : AppColors.panelBlue,
+                color: _timeLeft <= 10 ? AppColors.wrong : AppColors.panelBlue,
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.gold, width: 2),
               ),
@@ -274,99 +259,101 @@ class _GameScreenState extends State<GameScreen> {
 
     return Column(
       children: List.generate(4, (i) {
+        final letter = letters[i];
         final hidden = _hiddenOptions.contains(i);
-        final isCorrect =
-            _showResult && _currentQuestion?.correct == i;
+        final isCorrect = _showResult && _currentQuestion?.correct == i;
 
         Color baseColor = colors[i];
         if (_showResult && isCorrect) baseColor = AppColors.correct;
 
-        final voteCount = _votes[letters[i]] ?? 0;
-        final percent =
-        totalVotes == 0 ? 0 : (voteCount / totalVotes * 100);
+        final voteCount = _votes[letter] ?? 0;
+        final percent = totalVotes == 0 ? 0 : (voteCount / totalVotes * 100);
 
         return Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 5),
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 300),
-              opacity: hidden ? 0.15 : 1.0,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      baseColor.withOpacity(0.9),
-                      baseColor.withOpacity(0.6),
-                    ],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: hidden ? null : () => _addVote(letter),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 300),
+                opacity: hidden ? 0.15 : 1.0,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
                   ),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppColors.gold.withOpacity(0.5),
-                    width: 1.5,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        baseColor.withOpacity(0.9),
+                        baseColor.withOpacity(0.6),
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: AppColors.gold.withOpacity(0.5),
+                      width: 1.5,
+                    ),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppColors.background.withOpacity(0.4),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.gold,
-                          width: 2,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          letters[i],
-                          style: GoogleFonts.orbitron(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.background.withOpacity(0.4),
+                          shape: BoxShape.circle,
+                          border: Border.all(
                             color: AppColors.gold,
+                            width: 2,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            letter,
+                            style: GoogleFonts.orbitron(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.gold,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        i < options.length ? options[i] : '',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    if (totalVotes > 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.background.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
+                      const SizedBox(width: 14),
+                      Expanded(
                         child: Text(
-                          '${percent.toStringAsFixed(0)}%',
-                          style: GoogleFonts.orbitron(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                          i < options.length ? options[i] : '',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
                           ),
                         ),
                       ),
-                  ],
+                      if (totalVotes > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.background.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${percent.toStringAsFixed(0)}%',
+                            style: GoogleFonts.orbitron(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -434,9 +421,7 @@ class _GameScreenState extends State<GameScreen> {
             children: [
               Icon(
                 icon,
-                color: enabled
-                    ? AppColors.gold
-                    : AppColors.textSecondary,
+                color: enabled ? AppColors.gold : AppColors.textSecondary,
                 size: 20,
               ),
               const SizedBox(height: 4),
@@ -445,9 +430,7 @@ class _GameScreenState extends State<GameScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: enabled
-                      ? AppColors.gold
-                      : AppColors.textSecondary,
+                  color: enabled ? AppColors.gold : AppColors.textSecondary,
                 ),
               ),
             ],
