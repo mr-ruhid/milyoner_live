@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen>
                   children: [
                     _buildTopBar(locale),
                     const Spacer(flex: 2),
-                    _buildLogo(locale),
+                    _buildLogo(),
                     const Spacer(flex: 3),
                     _buildPrimaryButton(context, locale),
                     const SizedBox(height: 12),
@@ -206,83 +206,34 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildLogo(LocaleService locale) {
-    return Column(
+  Widget _buildLogo() {
+    return Stack(
+      alignment: Alignment.center,
       children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            AnimatedBuilder(
-              animation: _pulseAnimation,
-              builder: (_, __) {
-                return Container(
-                  width: 180,
-                  height: 180,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        AppColors.gold.withOpacity(
-                          0.25 * _pulseAnimation.value,
-                        ),
-                        Colors.transparent,
-                      ],
+        AnimatedBuilder(
+          animation: _pulseAnimation,
+          builder: (_, __) {
+            return Container(
+              width: 340,
+              height: 340,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.gold.withOpacity(
+                      0.3 * _pulseAnimation.value,
                     ),
-                  ),
-                );
-              },
-            ),
-            SvgPicture.asset(
-              'assets/logo/logo.svg',
-              width: 140,
-              height: 140,
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        Text(
-          locale.t('app_title'),
-          style: GoogleFonts.orbitron(
-            fontSize: 42,
-            fontWeight: FontWeight.w900,
-            color: AppColors.gold,
-            letterSpacing: 5,
-            height: 1,
-            shadows: [
-              Shadow(
-                color: AppColors.gold.withOpacity(0.5),
-                blurRadius: 24,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 30,
-              height: 1,
-              color: AppColors.textSecondary.withOpacity(0.5),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Text(
-                locale.t('app_subtitle'),
-                style: GoogleFonts.orbitron(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.textSecondary,
-                  letterSpacing: 8,
+                    Colors.transparent,
+                  ],
                 ),
               ),
-            ),
-            Container(
-              width: 30,
-              height: 1,
-              color: AppColors.textSecondary.withOpacity(0.5),
-            ),
-          ],
+            );
+          },
+        ),
+        SvgPicture.asset(
+          'assets/logo/logo.svg',
+          width: 280,
+          height: 280,
         ),
       ],
     );
