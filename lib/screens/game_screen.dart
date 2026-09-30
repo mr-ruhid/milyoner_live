@@ -7,6 +7,7 @@ import '../config/theme.dart';
 import '../models/question.dart';
 import '../services/question_service.dart';
 import '../services/locale_service.dart';
+import 'question_form_screen.dart';
 
 const Color _kBorder = Color(0xFFD9D4C3);
 const LinearGradient _kFill = LinearGradient(
@@ -154,22 +155,26 @@ class _GameScreenState extends State<GameScreen> {
     _revealResult();
   }
 
+  void _openAddQuestion() async {
+    final service = context.read<QuestionService>();
+    final locale = context.read<LocaleService>();
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const QuestionFormScreen()),
+    );
+    await service.loadQuestions(locale.currentLang);
+    if (!mounted) return;
+    setState(() {});
+    _loadQuestions();
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleService>();
+    final service = context.watch<QuestionService>();
 
     if (_questions.isEmpty) {
-      return Scaffold(
-        body: Container(
-          decoration: const BoxDecoration(gradient: _kBackground),
-          child: Center(
-            child: Text(
-              locale.t('add_question'),
-              style: GoogleFonts.poppins(color: Colors.white70),
-            ),
-          ),
-        ),
-      );
+      return _buildEmptyState(locale, service);
     }
 
     final options = _currentQuestion?.options ?? [];
@@ -265,6 +270,189 @@ class _GameScreenState extends State<GameScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(LocaleService locale, QuestionService service) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(gradient: _kBackground),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(
+                    children: [
+                      _buildCircleButton(
+                        icon: Icons.arrow_back,
+                        onTap: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    gradient: _kFill,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _kBorder, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 20,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.quiz_outlined,
+                    size: 64,
+                    color: AppColors.gold,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                if (service.usedFallback)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.gold.withOpacity(0.6),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          color: AppColors.gold,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'Showing English questions - no ${locale.currentLang.toUpperCase()} file yet',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: AppColors.gold,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Text(
+                  'No questions yet',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.orbitron(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Add questions for ${locale.currentLang.toUpperCase()} to start playing',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.white60,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                GestureDetector(
+                  onTap: _openAddQuestion,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.gold, AppColors.goldDark],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: _kBorder, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.gold.withOpacity(0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.add_circle_outline,
+                          color: Color(0xFF041A52),
+                          size: 22,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          locale.t('add_question'),
+                          style: GoogleFonts.orbitron(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFF041A52),
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const Spacer(flex: 2),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCircleButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          gradient: _kFill,
+          shape: BoxShape.circle,
+          border: Border.all(color: _kBorder, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Icon(icon, color: AppColors.gold, size: 20),
       ),
     );
   }
