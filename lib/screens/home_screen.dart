@@ -1,29 +1,19 @@
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../config/theme.dart';
+import '../services/locale_service.dart';
+import '../services/question_service.dart';
+import 'game_screen.dart';
+import 'manage_questions_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  String _selectedLanguage = 'az';
-  bool _isMusicOn = true;
-  bool _isSoundOn = true;
-
-  final List<Map<String, String>> _languages = [
-    {'code': 'az', 'flag': '🇦🇿', 'name': 'Azərbaycan'},
-    {'code': 'en', 'flag': '🇬🇧', 'name': 'English'},
-    {'code': 'tr', 'flag': '🇹🇷', 'name': 'Türkçe'},
-    {'code': 'ru', 'flag': '🇷🇺', 'name': 'Русский'},
-  ];
-
-  @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleService>();
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -39,30 +29,18 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               children: [
                 const Spacer(flex: 2),
-
-                // Logo və başlıq
-                _buildLogo(),
-
+                _buildLogo(locale),
+                const Spacer(flex: 2),
+                _buildStartButton(context, locale),
+                const SizedBox(height: 14),
+                _buildManageButton(context, locale),
                 const Spacer(flex: 1),
-
-                // Dil seçimi
-                _buildLanguageSection(),
-
-                const SizedBox(height: 32),
-
-                // Başla düyməsi
-                _buildStartButton(),
-
-                const SizedBox(height: 24),
-
-                // Alt hissə - səs/musiqi idarəsi
-                _buildBottomControls(),
-
-                const Spacer(flex: 1),
+                _buildLanguageBar(context, locale),
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -71,14 +49,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 🏆 Logo və başlıq
-  Widget _buildLogo() {
+  Widget _buildLogo(LocaleService locale) {
     return Column(
       children: [
-        // Ulduz effekti ilə loqo dairəsi
         Container(
-          width: 140,
-          height: 140,
+          width: 130,
+          height: 130,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const LinearGradient(
@@ -90,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
               BoxShadow(
                 color: AppColors.gold.withOpacity(0.5),
                 blurRadius: 40,
-                spreadRadius: 8,
+                spreadRadius: 6,
               ),
             ],
           ),
@@ -98,23 +74,21 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Text(
               '?',
               style: GoogleFonts.orbitron(
-                fontSize: 80,
+                fontSize: 72,
                 fontWeight: FontWeight.bold,
                 color: AppColors.background,
               ),
             ),
           ),
         ),
-        const SizedBox(height: 32),
-
-        // Başlıq
+        const SizedBox(height: 28),
         Text(
-          'MILYONER',
+          locale.t('app_title'),
           style: GoogleFonts.orbitron(
-            fontSize: 52,
+            fontSize: 46,
             fontWeight: FontWeight.bold,
             color: AppColors.gold,
-            letterSpacing: 8,
+            letterSpacing: 6,
             shadows: [
               Shadow(
                 color: AppColors.gold.withOpacity(0.6),
@@ -123,118 +97,31 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-
-        const SizedBox(height: 8),
-
-        // Alt başlıq
+        const SizedBox(height: 4),
         Text(
-          'LIVE',
+          locale.t('app_subtitle'),
           style: GoogleFonts.orbitron(
-            fontSize: 20,
+            fontSize: 16,
             fontWeight: FontWeight.w400,
             color: AppColors.textSecondary,
-            letterSpacing: 12,
+            letterSpacing: 10,
           ),
         ),
       ],
     );
   }
 
-  // 🌍 Dil seçimi
-  Widget _buildLanguageSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 12),
-          child: Text(
-            'DİL SEÇ / SELECT LANGUAGE',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-              letterSpacing: 2,
-            ),
-          ),
-        ),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          alignment: WrapAlignment.center,
-          children: _languages.map((lang) {
-            final isSelected = _selectedLanguage == lang['code'];
-            return _buildLanguageChip(lang, isSelected);
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLanguageChip(Map<String, String> lang, bool isSelected) {
+  Widget _buildStartButton(BuildContext context, LocaleService locale) {
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedLanguage = lang['code']!;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.gold.withOpacity(0.15)
-              : AppColors.panelDark.withOpacity(0.6),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? AppColors.gold : AppColors.panelBlue,
-            width: isSelected ? 2 : 1.5,
-          ),
-          boxShadow: isSelected
-              ? [
-            BoxShadow(
-              color: AppColors.gold.withOpacity(0.3),
-              blurRadius: 12,
-            ),
-          ]
-              : [],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(lang['flag']!, style: const TextStyle(fontSize: 20)),
-            const SizedBox(width: 8),
-            Text(
-              lang['name']!,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? AppColors.gold : AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ▶️ Başla düyməsi
-  Widget _buildStartButton() {
-    return GestureDetector(
-      onTap: () {
-        // Sonra burada GameScreen-ə keçəcəyik
-        // Navigator.push(context, MaterialPageRoute(
-        //   builder: (_) => const GameScreen(),
-        // ));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Oyun başlayır... Dil: $_selectedLanguage',
-              style: GoogleFonts.poppins(color: AppColors.textPrimary),
-            ),
-            backgroundColor: AppColors.panelBlue,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+      onTap: () async {
+        final service = context.read<QuestionService>();
+        await service.loadQuestions(locale.currentLang);
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const GameScreen()),
+          );
+        }
       },
       child: Container(
         width: double.infinity,
@@ -264,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: 12),
             Text(
-              'OYUNA BAŞLA',
+              locale.t('start_game'),
               style: GoogleFonts.orbitron(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -278,58 +165,129 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 🎵 Alt idarə düymələri
-  Widget _buildBottomControls() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildIconToggle(
-          icon: _isMusicOn ? Icons.music_note : Icons.music_off,
-          isOn: _isMusicOn,
-          onTap: () => setState(() => _isMusicOn = !_isMusicOn),
-        ),
-        const SizedBox(width: 24),
-        _buildIconToggle(
-          icon: _isSoundOn ? Icons.volume_up : Icons.volume_off,
-          isOn: _isSoundOn,
-          onTap: () => setState(() => _isSoundOn = !_isSoundOn),
-        ),
-        const SizedBox(width: 24),
-        _buildIconToggle(
-          icon: Icons.info_outline,
-          isOn: false,
-          onTap: () {
-            // Sonra info dialoqu əlavə edəcəyik
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildIconToggle({
-    required IconData icon,
-    required bool isOn,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildManageButton(BuildContext context, LocaleService locale) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () async {
+        final service = context.read<QuestionService>();
+        await service.loadQuestions(locale.currentLang);
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ManageQuestionsScreen(),
+            ),
+          );
+        }
+      },
       child: Container(
-        width: 50,
-        height: 50,
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
           color: AppColors.panelDark.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isOn ? AppColors.gold : AppColors.panelBlue,
+            color: AppColors.gold.withOpacity(0.6),
             width: 1.5,
           ),
         ),
-        child: Icon(
-          icon,
-          color: isOn ? AppColors.gold : AppColors.textSecondary,
-          size: 22,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.library_add_outlined,
+              color: AppColors.gold,
+              size: 22,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              locale.t('add_question'),
+              style: GoogleFonts.poppins(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.gold,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLanguageBar(BuildContext context, LocaleService locale) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            locale.t('select_language'),
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+              letterSpacing: 2,
+            ),
+          ),
+        ),
+        Row(
+          children: LocaleService.supportedLanguages.map((lang) {
+            final code = lang['code']!;
+            final isSelected = locale.currentLang == code;
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => locale.loadLanguage(code),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.gold.withOpacity(0.15)
+                        : AppColors.panelDark.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.gold
+                          : AppColors.panelBlue,
+                      width: isSelected ? 2 : 1,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                      BoxShadow(
+                        color: AppColors.gold.withOpacity(0.3),
+                        blurRadius: 10,
+                      ),
+                    ]
+                        : [],
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        lang['flag']!,
+                        style: const TextStyle(fontSize: 22),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        code.toUpperCase(),
+                        style: GoogleFonts.orbitron(
+                          fontSize: 11,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          color: isSelected
+                              ? AppColors.gold
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }
