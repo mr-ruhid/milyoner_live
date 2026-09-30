@@ -31,7 +31,7 @@ class MilyonerApp extends StatelessWidget {
           brightness: Brightness.dark,
           fontFamily: 'Poppins',
         ),
-        home: const HomeScreen(),
+        home: HomeScreen(),
       ),
     );
   }
