@@ -169,16 +169,17 @@ class _GameScreenState extends State<GameScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
             child: Column(
               children: [
                 _buildTopBar(locale),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 _buildLogo(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
                 _buildQuestionPanel(),
-                const SizedBox(height: 20),
-                Expanded(
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 180,
                   child: Column(
                     children: [
                       Expanded(
@@ -192,7 +193,7 @@ class _GameScreenState extends State<GameScreen> {
                                 totalVotes: totalVotes,
                               ),
                             ),
-                            const SizedBox(width: 14),
+                            const SizedBox(width: 16),
                             Expanded(
                               child: _buildAnswer(
                                 letter: letters[1],
@@ -204,7 +205,7 @@ class _GameScreenState extends State<GameScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 12),
                       Expanded(
                         child: Row(
                           children: [
@@ -216,7 +217,7 @@ class _GameScreenState extends State<GameScreen> {
                                 totalVotes: totalVotes,
                               ),
                             ),
-                            const SizedBox(width: 14),
+                            const SizedBox(width: 16),
                             Expanded(
                               child: _buildAnswer(
                                 letter: letters[3],
@@ -231,8 +232,11 @@ class _GameScreenState extends State<GameScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
+                const Spacer(),
                 _buildBottomBar(locale),
+                const SizedBox(height: 10),
+                _buildLanguageHint(locale),
+                const SizedBox(height: 6),
               ],
             ),
           ),
@@ -322,27 +326,30 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _buildLogo() {
     return SizedBox(
-      height: 90,
+      height: 130,
       child: SvgPicture.asset('assets/logo/logo.svg'),
     );
   }
 
   Widget _buildQuestionPanel() {
     return _hexPanel(
-      height: 78,
+      height: 74,
       borderColor: AppColors.hexBorder,
       gradient: AppColors.hexPanelFill,
       child: Center(
-        child: Text(
-          _currentQuestion?.question ?? '',
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
-            height: 1.3,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 30),
+          child: Text(
+            _currentQuestion?.question ?? '',
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+              height: 1.3,
+            ),
           ),
         ),
       ),
@@ -407,12 +414,12 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
+                padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Row(
                   children: [
                     Container(
-                      width: 30,
-                      height: 30,
+                      width: 26,
+                      height: 26,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: _showResult && (isCorrect || isTopWrong)
@@ -424,7 +431,7 @@ class _GameScreenState extends State<GameScreen> {
                         child: Text(
                           letter,
                           style: GoogleFonts.orbitron(
-                            fontSize: 13,
+                            fontSize: 11,
                             fontWeight: FontWeight.w900,
                             color: _showResult && (isCorrect || isTopWrong)
                                 ? AppColors.background
@@ -433,14 +440,14 @@ class _GameScreenState extends State<GameScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         text,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.poppins(
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
@@ -515,7 +522,7 @@ class _GameScreenState extends State<GameScreen> {
             onTap: _useFiftyFifty,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         Expanded(
           child: _buildActionButton(
             icon: Icons.visibility,
@@ -524,7 +531,7 @@ class _GameScreenState extends State<GameScreen> {
             onTap: _useReveal,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         Expanded(
           child: _buildActionButton(
             icon: Icons.skip_next,
@@ -586,6 +593,40 @@ class _GameScreenState extends State<GameScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageHint(LocaleService locale) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.overlay,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.gold.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.chat_bubble_outline,
+            color: AppColors.gold,
+            size: 13,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            locale.t('chat_language_hint'),
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
       ),
     );
   }

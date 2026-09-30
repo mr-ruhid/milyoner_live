@@ -26,5 +26,6 @@
   "reward": "Reward",
   "settings": "SETTINGS",
   "sound": "SOUND",
-  "music": "MUSIC"
+  "music": "MUSIC",
+  "chat_language_hint": "Type /az /en /hi in chat to change your language"
 }
