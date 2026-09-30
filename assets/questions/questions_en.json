@@ -1,0 +1,39 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "question": "What is the capital of Azerbaijan?",
+      "options": ["Ganja", "Baku", "Sumgayit", "Sheki"],
+      "correct": 1,
+      "reward": 100
+    },
+    {
+      "id": "q2",
+      "question": "What is the largest ocean in the world?",
+      "options": ["Atlantic", "Indian", "Pacific", "Arctic"],
+      "correct": 2,
+      "reward": 200
+    },
+    {
+      "id": "q3",
+      "question": "Which planet is known as the Red Planet?",
+      "options": ["Venus", "Mars", "Jupiter", "Saturn"],
+      "correct": 1,
+      "reward": 300
+    },
+    {
+      "id": "q4",
+      "question": "Who painted the Mona Lisa?",
+      "options": ["Van Gogh", "Picasso", "Da Vinci", "Michelangelo"],
+      "correct": 2,
+      "reward": 500
+    },
+    {
+      "id": "q5",
+      "question": "What is the chemical symbol for gold?",
+      "options": ["Go", "Gd", "Au", "Ag"],
+      "correct": 2,
+      "reward": 1000
+    }
+  ]
+}
