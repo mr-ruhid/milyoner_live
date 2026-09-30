@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
@@ -215,8 +216,8 @@ class _HomeScreenState extends State<HomeScreen>
               animation: _pulseAnimation,
               builder: (_, __) {
                 return Container(
-                  width: 160,
-                  height: 160,
+                  width: 180,
+                  height: 180,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -231,34 +232,10 @@ class _HomeScreenState extends State<HomeScreen>
                 );
               },
             ),
-            Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.gold, AppColors.goldDark],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.gold.withOpacity(0.4),
-                    blurRadius: 30,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  '?',
-                  style: GoogleFonts.orbitron(
-                    fontSize: 62,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.background,
-                  ),
-                ),
-              ),
+            SvgPicture.asset(
+              'assets/logo/logo.svg',
+              width: 140,
+              height: 140,
             ),
           ],
         ),
@@ -556,10 +533,5 @@ class _HomeScreenState extends State<HomeScreen>
         );
       },
     );
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
   }
 }

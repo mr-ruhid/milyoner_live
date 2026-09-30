@@ -13,6 +13,7 @@ dependencies:
   provider: ^6.1.1
   google_fonts: ^6.1.0
   shared_preferences: ^2.2.2
+  flutter_svg: ^2.0.10
 
 dev_dependencies:
   flutter_lints: ^3.0.0
@@ -25,3 +26,4 @@ flutter:
     - assets/locales/
     - assets/questions/
     - assets/logo/applogo.png
+    - assets/logo/logo.svg
