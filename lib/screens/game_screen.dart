@@ -21,7 +21,6 @@ class _GameScreenState extends State<GameScreen> {
   Timer? _timer;
   bool _isVotingActive = false;
   bool _showResult = false;
-  int _selectedAnswer = -1;
   Map<String, int> _votes = {'A': 0, 'B': 0, 'C': 0, 'D': 0};
   List<int> _hiddenOptions = [];
   bool _fiftyFiftyUsed = false;
@@ -40,12 +39,8 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _loadQuestions() {
-    final locale = context.read<LocaleService>();
     final service = context.read<QuestionService>();
-    _questions = service.getQuestionsForLanguage(locale.currentLang);
-    if (_questions.isEmpty) {
-      _questions = service.questions;
-    }
+    _questions = List.from(service.questions);
     if (mounted) {
       setState(() {});
       if (_questions.isNotEmpty) {
@@ -63,7 +58,6 @@ class _GameScreenState extends State<GameScreen> {
       _timeLeft = 30;
       _isVotingActive = true;
       _showResult = false;
-      _selectedAnswer = -1;
       _votes = {'A': 0, 'B': 0, 'C': 0, 'D': 0};
       _hiddenOptions = [];
       _fiftyFiftyUsed = false;
@@ -84,7 +78,6 @@ class _GameScreenState extends State<GameScreen> {
     setState(() {
       _isVotingActive = false;
       _showResult = true;
-      _selectedAnswer = _currentQuestion?.correct ?? -1;
     });
   }
 
@@ -121,9 +114,28 @@ class _GameScreenState extends State<GameScreen> {
       return Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
-          child: Text(
-            locale.t('add_question'),
-            style: GoogleFonts.poppins(color: AppColors.textSecondary),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                locale.t('add_question'),
+                style: GoogleFonts.poppins(
+                  color: AppColors.textSecondary,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.gold,
+                ),
+                child: Text(
+                  locale.t('cancel'),
+                  style: GoogleFonts.poppins(color: AppColors.background),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -140,7 +152,7 @@ class _GameScreenState extends State<GameScreen> {
               const SizedBox(height: 16),
               _buildQuestionPanel(locale),
               const SizedBox(height: 16),
-              Expanded(child: _buildAnswers(locale)),
+              Expanded(child: _buildAnswers()),
               const SizedBox(height: 12),
               _buildBottomBar(locale),
             ],
@@ -166,7 +178,10 @@ class _GameScreenState extends State<GameScreen> {
         Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 6,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.panelBlue,
                 borderRadius: BorderRadius.circular(10),
@@ -185,7 +200,9 @@ class _GameScreenState extends State<GameScreen> {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: _timeLeft <= 10 ? AppColors.wrong : AppColors.panelBlue,
+                color: _timeLeft <= 10
+                    ? AppColors.wrong
+                    : AppColors.panelBlue,
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.gold, width: 2),
               ),
@@ -231,7 +248,7 @@ class _GameScreenState extends State<GameScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            _currentQuestion?.getQuestion(locale.currentLang) ?? '',
+            _currentQuestion?.question ?? '',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               fontSize: 20,
@@ -244,8 +261,8 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _buildAnswers(LocaleService locale) {
-    final options = _currentQuestion?.getOptions(locale.currentLang) ?? [];
+  Widget _buildAnswers() {
+    final options = _currentQuestion?.options ?? [];
     final letters = ['A', 'B', 'C', 'D'];
     final colors = [
       AppColors.optionA,
@@ -258,17 +275,15 @@ class _GameScreenState extends State<GameScreen> {
     return Column(
       children: List.generate(4, (i) {
         final hidden = _hiddenOptions.contains(i);
-        final isCorrect = _showResult && _currentQuestion?.correct == i;
-        final isWrongSelected = _showResult &&
-            _selectedAnswer == i &&
-            _currentQuestion?.correct != i;
+        final isCorrect =
+            _showResult && _currentQuestion?.correct == i;
 
         Color baseColor = colors[i];
         if (_showResult && isCorrect) baseColor = AppColors.correct;
-        if (_showResult && isWrongSelected) baseColor = AppColors.wrong;
 
         final voteCount = _votes[letters[i]] ?? 0;
-        final percent = totalVotes == 0 ? 0 : (voteCount / totalVotes * 100);
+        final percent =
+        totalVotes == 0 ? 0 : (voteCount / totalVotes * 100);
 
         return Expanded(
           child: Padding(
@@ -305,7 +320,10 @@ class _GameScreenState extends State<GameScreen> {
                       decoration: BoxDecoration(
                         color: AppColors.background.withOpacity(0.4),
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.gold, width: 2),
+                        border: Border.all(
+                          color: AppColors.gold,
+                          width: 2,
+                        ),
                       ),
                       child: Center(
                         child: Text(
@@ -416,7 +434,9 @@ class _GameScreenState extends State<GameScreen> {
             children: [
               Icon(
                 icon,
-                color: enabled ? AppColors.gold : AppColors.textSecondary,
+                color: enabled
+                    ? AppColors.gold
+                    : AppColors.textSecondary,
                 size: 20,
               ),
               const SizedBox(height: 4),
@@ -425,7 +445,9 @@ class _GameScreenState extends State<GameScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: enabled ? AppColors.gold : AppColors.textSecondary,
+                  color: enabled
+                      ? AppColors.gold
+                      : AppColors.textSecondary,
                 ),
               ),
             ],
