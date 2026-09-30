@@ -6,15 +6,36 @@ class LocaleService extends ChangeNotifier {
   String _currentLang = 'en';
   Map<String, String> _strings = {};
   final Map<String, Map<String, String>> _cache = {};
+  List<Map<String, String>> _languages = [];
 
   String get currentLang => _currentLang;
+  List<Map<String, String>> get languages => _languages;
 
-  static const List<Map<String, String>> supportedLanguages = [
-    {'code': 'az', 'flag': '🇦🇿', 'name': 'Azərbaycan'},
-    {'code': 'en', 'flag': '🇬🇧', 'name': 'English'},
-    {'code': 'tr', 'flag': '🇹🇷', 'name': 'Türkçe'},
-    {'code': 'ru', 'flag': '🇷🇺', 'name': 'Русский'},
-  ];
+  Future<void> init() async {
+    await _loadManifest();
+    await loadLanguage(_currentLang);
+  }
+
+  Future<void> _loadManifest() async {
+    try {
+      final raw = await rootBundle.loadString('assets/locales/locales.json');
+      final Map<String, dynamic> decoded = json.decode(raw);
+      final List<dynamic> list = decoded['languages'];
+      _languages = list
+          .map((e) => Map<String, String>.from(e))
+          .toList();
+      if (_languages.isNotEmpty) {
+        final hasDefault = _languages.any((l) => l['code'] == _currentLang);
+        if (!hasDefault) {
+          _currentLang = _languages.first['code'] ?? 'en';
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Manifest load error: $e');
+      _languages = [];
+    }
+  }
 
   Future<void> loadLanguage(String langCode) async {
     if (_cache.containsKey(langCode)) {
