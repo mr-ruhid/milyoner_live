@@ -1,42 +1,29 @@
 class Question {
   final String id;
-  final Map<String, Map<String, dynamic>> translations;
+  final String question;
+  final List<String> options;
   final int correct;
   final int reward;
 
   Question({
     required this.id,
-    required this.translations,
+    required this.question,
+    required this.options,
     required this.correct,
     required this.reward,
   });
 
-  String getQuestion(String lang) {
-    return translations[lang]?['question'] ??
-        translations['en']?['question'] ??
-        '';
-  }
-
-  List<String> getOptions(String lang) {
-    final opts = translations[lang]?['options'] ??
-        translations['en']?['options'] ??
-        [];
-    return List<String>.from(opts);
-  }
-
-  bool hasLanguage(String lang) {
-    return translations.containsKey(lang);
-  }
-
   Question copyWith({
     String? id,
-    Map<String, Map<String, dynamic>>? translations,
+    String? question,
+    List<String>? options,
     int? correct,
     int? reward,
   }) {
     return Question(
       id: id ?? this.id,
-      translations: translations ?? this.translations,
+      question: question ?? this.question,
+      options: options ?? this.options,
       correct: correct ?? this.correct,
       reward: reward ?? this.reward,
     );
@@ -45,7 +32,8 @@ class Question {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'translations': translations,
+      'question': question,
+      'options': options,
       'correct': correct,
       'reward': reward,
     };
@@ -54,11 +42,8 @@ class Question {
   factory Question.fromJson(Map<String, dynamic> json) {
     return Question(
       id: json['id'].toString(),
-      translations: Map<String, Map<String, dynamic>>.from(
-        (json['translations'] as Map).map(
-              (k, v) => MapEntry(k.toString(), Map<String, dynamic>.from(v)),
-        ),
-      ),
+      question: json['question'] as String,
+      options: List<String>.from(json['options']),
       correct: json['correct'] as int,
       reward: json['reward'] as int? ?? 100,
     );
