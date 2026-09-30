@@ -8,7 +8,6 @@ import '../models/question.dart';
 import '../services/question_service.dart';
 import '../services/locale_service.dart';
 
-// Millionaire-style palette
 const Color _kBorder = Color(0xFFD9D4C3);
 const LinearGradient _kFill = LinearGradient(
   begin: Alignment.topCenter,
@@ -191,7 +190,9 @@ class _GameScreenState extends State<GameScreen> {
                 ),
                 const SizedBox(height: 8),
                 _buildLogo(),
-                const SizedBox(height: 14),
+                const SizedBox(height: 8),
+                _buildLanguageHint(locale),
+                const SizedBox(height: 16),
                 _buildQuestionPanel(),
                 const SizedBox(height: 14),
                 SizedBox(
@@ -260,8 +261,6 @@ class _GameScreenState extends State<GameScreen> {
                   child: _buildBottomBar(locale),
                 ),
                 const SizedBox(height: 10),
-                _buildLanguageHint(locale),
-                const SizedBox(height: 6),
               ],
             ),
           ),
@@ -351,7 +350,7 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _buildLogo() {
     return SizedBox(
-      height: 130,
+      height: 180,
       child: SvgPicture.asset('assets/logo/logo.svg'),
     );
   }
@@ -447,35 +446,13 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: Row(
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    Container(
-                      width: 26,
-                      height: 26,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _showResult && (isCorrect || isTopWrong)
-                            ? borderColor
-                            : Colors.transparent,
-                        border: Border.all(color: borderColor, width: 1.5),
-                      ),
-                      child: Center(
-                        child: Text(
-                          letter,
-                          style: GoogleFonts.orbitron(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            color: _showResult && (isCorrect || isTopWrong)
-                                ? AppColors.background
-                                : AppColors.gold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
+                    Center(
                       child: Text(
                         text,
+                        textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.poppins(
@@ -485,9 +462,35 @@ class _GameScreenState extends State<GameScreen> {
                         ),
                       ),
                     ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _showResult && (isCorrect || isTopWrong)
+                              ? borderColor
+                              : Colors.transparent,
+                          border: Border.all(color: borderColor, width: 1.5),
+                        ),
+                        child: Center(
+                          child: Text(
+                            letter,
+                            style: GoogleFonts.orbitron(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              color: _showResult && (isCorrect || isTopWrong)
+                                  ? AppColors.background
+                                  : AppColors.gold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                     if (showPercent)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
                         child: Text(
                           '${percent.toStringAsFixed(0)}%',
                           style: GoogleFonts.orbitron(
@@ -507,7 +510,6 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  /// Pointed-end panel with horizontal connector lines running to the edges.
   Widget _hexPanel({
     required Widget child,
     required Gradient gradient,
@@ -542,7 +544,6 @@ class _GameScreenState extends State<GameScreen> {
 
     final content = Stack(
       children: [
-        // connector line behind the panel
         Positioned(
           left: 0,
           right: 0,
