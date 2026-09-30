@@ -1,206 +1,309 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
-import '../models/question.dart';
-import '../services/question_service.dart';
 import '../services/locale_service.dart';
+import '../services/question_service.dart';
+import 'game_screen.dart';
+import 'manage_questions_screen.dart';
 
-class GameScreen extends StatefulWidget {
-  const GameScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<GameScreen> createState() => _GameScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> {
-  List<Question> _questions = [];
-  int _currentIndex = 0;
-  int _timeLeft = 30;
-  Timer? _timer;
-  bool _isVotingActive = false;
-  bool _showResult = false;
-  Map<String, int> _votes = {'A': 0, 'B': 0, 'C': 0, 'D': 0};
-  List<int> _hiddenOptions = [];
-  bool _fiftyFiftyUsed = false;
-  bool _revealUsed = false;
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+  bool _showLangPicker = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadQuestions());
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _pulseController.dispose();
     super.dispose();
-  }
-
-  void _loadQuestions() {
-    final service = context.read<QuestionService>();
-    _questions = List.from(service.questions);
-    if (mounted) {
-      setState(() {});
-      if (_questions.isNotEmpty) {
-        _startRound();
-      }
-    }
-  }
-
-  Question? get _currentQuestion =>
-      _currentIndex < _questions.length ? _questions[_currentIndex] : null;
-
-  void _startRound() {
-    _timer?.cancel();
-    setState(() {
-      _timeLeft = 30;
-      _isVotingActive = true;
-      _showResult = false;
-      _votes = {'A': 0, 'B': 0, 'C': 0, 'D': 0};
-      _hiddenOptions = [];
-      _fiftyFiftyUsed = false;
-      _revealUsed = false;
-    });
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) return;
-      setState(() => _timeLeft--);
-      if (_timeLeft <= 0) {
-        t.cancel();
-        _revealResult();
-      }
-    });
-  }
-
-  void _revealResult() {
-    _timer?.cancel();
-    setState(() {
-      _isVotingActive = false;
-      _showResult = true;
-    });
-  }
-
-  void _nextQuestion() {
-    if (_currentIndex + 1 >= _questions.length) {
-      _currentIndex = 0;
-    } else {
-      _currentIndex++;
-    }
-    _startRound();
-  }
-
-  void _addVote(String letter) {
-    if (!_isVotingActive) return;
-    final index = 'ABCD'.indexOf(letter);
-    if (_hiddenOptions.contains(index)) return;
-    setState(() {
-      _votes[letter] = (_votes[letter] ?? 0) + 1;
-    });
-  }
-
-  void _useFiftyFifty() {
-    if (_fiftyFiftyUsed || _currentQuestion == null || !_isVotingActive) return;
-    final correct = _currentQuestion!.correct;
-    final wrong = [0, 1, 2, 3].where((i) => i != correct).toList()..shuffle();
-    setState(() {
-      _fiftyFiftyUsed = true;
-      _hiddenOptions = wrong.take(2).toList();
-    });
-  }
-
-  void _useReveal() {
-    if (_revealUsed || _currentQuestion == null || !_isVotingActive) return;
-    setState(() => _revealUsed = true);
-    _revealResult();
   }
 
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleService>();
 
-    if (_questions.isEmpty) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(
-          child: Text(
-            locale.t('add_question'),
-            style: GoogleFonts.poppins(color: AppColors.textSecondary),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              _buildHeader(locale),
-              const SizedBox(height: 16),
-              _buildQuestionPanel(locale),
-              const SizedBox(height: 16),
-              Expanded(child: _buildAnswers()),
-              const SizedBox(height: 12),
-              _buildBottomBar(locale),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF060920),
+              Color(0xFF0A0E27),
+              Color(0xFF000000),
             ],
           ),
+        ),
+        child: Stack(
+          children: [
+            _buildAmbientGlow(),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: Column(
+                  children: [
+                    _buildTopBar(locale),
+                    const Spacer(flex: 2),
+                    _buildLogo(locale),
+                    const Spacer(flex: 3),
+                    _buildPrimaryButton(context, locale),
+                    const SizedBox(height: 12),
+                    _buildSecondaryRow(context, locale),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(LocaleService locale) {
+  Widget _buildAmbientGlow() {
+    return Positioned(
+      top: -120,
+      left: -120,
+      child: AnimatedBuilder(
+        animation: _pulseAnimation,
+        builder: (_, __) {
+          return Container(
+            width: 340,
+            height: 340,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  AppColors.gold.withOpacity(0.08 * _pulseAnimation.value),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTopBar(LocaleService locale) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          _buildLiveBadge(locale),
+          const Spacer(),
+          _buildLangButton(locale),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLiveBadge(LocaleService locale) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        AnimatedBuilder(
+          animation: _pulseAnimation,
+          builder: (_, __) {
+            return Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.wrong.withOpacity(_pulseAnimation.value),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.wrong.withOpacity(0.6),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(width: 8),
         Text(
-          locale.t('app_title'),
+          'LIVE',
           style: GoogleFonts.orbitron(
-            fontSize: 22,
+            fontSize: 10,
             fontWeight: FontWeight.bold,
-            color: AppColors.gold,
+            color: AppColors.textSecondary,
             letterSpacing: 3,
           ),
         ),
-        Row(
+      ],
+    );
+  }
+
+  Widget _buildLangButton(LocaleService locale) {
+    final current = locale.languages.firstWhere(
+          (l) => l['code'] == locale.currentLang,
+      orElse: () => {'code': 'en', 'flag': '🇬🇧', 'name': 'English'},
+    );
+
+    return GestureDetector(
+      onTap: () => setState(() => _showLangPicker = !_showLangPicker),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.panelDark.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: AppColors.panelBlue,
+            width: 1.2,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.panelBlue,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '${_currentIndex + 1}/${_questions.length}',
-                style: GoogleFonts.orbitron(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.gold,
-                ),
+            Text(
+              current['flag'] ?? '🌐',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              (current['code'] ?? 'en').toUpperCase(),
+              style: GoogleFonts.orbitron(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+                letterSpacing: 1.5,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 4),
+            Icon(
+              _showLangPicker
+                  ? Icons.keyboard_arrow_up
+                  : Icons.keyboard_arrow_down,
+              color: AppColors.gold,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogo(LocaleService locale) {
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (_, __) {
+                return Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppColors.gold.withOpacity(
+                          0.25 * _pulseAnimation.value,
+                        ),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
             Container(
-              width: 56,
-              height: 56,
+              width: 110,
+              height: 110,
               decoration: BoxDecoration(
-                color: _timeLeft <= 10 ? AppColors.wrong : AppColors.panelBlue,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.gold, width: 2),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.gold, AppColors.goldDark],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.gold.withOpacity(0.4),
+                    blurRadius: 30,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
               child: Center(
                 child: Text(
-                  '$_timeLeft',
+                  '?',
                   style: GoogleFonts.orbitron(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    fontSize: 62,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.background,
                   ),
                 ),
               ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Text(
+          locale.t('app_title'),
+          style: GoogleFonts.orbitron(
+            fontSize: 42,
+            fontWeight: FontWeight.w900,
+            color: AppColors.gold,
+            letterSpacing: 5,
+            height: 1,
+            shadows: [
+              Shadow(
+                color: AppColors.gold.withOpacity(0.5),
+                blurRadius: 24,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 30,
+              height: 1,
+              color: AppColors.textSecondary.withOpacity(0.5),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                locale.t('app_subtitle'),
+                style: GoogleFonts.orbitron(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 8,
+                ),
+              ),
+            ),
+            Container(
+              width: 30,
+              height: 1,
+              color: AppColors.textSecondary.withOpacity(0.5),
             ),
           ],
         ),
@@ -208,235 +311,255 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _buildQuestionPanel(LocaleService locale) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.panelBlue, AppColors.panelDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  Widget _buildPrimaryButton(BuildContext context, LocaleService locale) {
+    return GestureDetector(
+      onTap: () => _startGame(context, locale),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [AppColors.gold, AppColors.goldDark],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.gold.withOpacity(0.35),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.gold, width: 2),
-      ),
-      child: Column(
-        children: [
-          Text(
-            '${locale.t('reward')}: ${_currentQuestion?.reward ?? 0}',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: AppColors.gold,
-              fontWeight: FontWeight.w600,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.play_circle_fill_rounded,
+              color: AppColors.background,
+              size: 26,
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _currentQuestion?.question ?? '',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnswers() {
-    final options = _currentQuestion?.options ?? [];
-    final letters = ['A', 'B', 'C', 'D'];
-    final colors = [
-      AppColors.optionA,
-      AppColors.optionB,
-      AppColors.optionC,
-      AppColors.optionD,
-    ];
-    final totalVotes = _votes.values.fold<int>(0, (a, b) => a + b);
-
-    return Column(
-      children: List.generate(4, (i) {
-        final letter = letters[i];
-        final hidden = _hiddenOptions.contains(i);
-        final isCorrect = _showResult && _currentQuestion?.correct == i;
-
-        Color baseColor = colors[i];
-        if (_showResult && isCorrect) baseColor = AppColors.correct;
-
-        final voteCount = _votes[letter] ?? 0;
-        final percent = totalVotes == 0 ? 0 : (voteCount / totalVotes * 100);
-
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5),
-            child: GestureDetector(
-              onTap: hidden ? null : () => _addVote(letter),
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 300),
-                opacity: hidden ? 0.15 : 1.0,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        baseColor.withOpacity(0.9),
-                        baseColor.withOpacity(0.6),
-                      ],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: AppColors.gold.withOpacity(0.5),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: AppColors.background.withOpacity(0.4),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.gold,
-                            width: 2,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            letter,
-                            style: GoogleFonts.orbitron(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.gold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          i < options.length ? options[i] : '',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      if (totalVotes > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.background.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '${percent.toStringAsFixed(0)}%',
-                            style: GoogleFonts.orbitron(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+            const SizedBox(width: 10),
+            Text(
+              locale.t('start_game'),
+              style: GoogleFonts.orbitron(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: AppColors.background,
+                letterSpacing: 2,
               ),
             ),
-          ),
-        );
-      }),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildBottomBar(LocaleService locale) {
+  Widget _buildSecondaryRow(BuildContext context, LocaleService locale) {
     return Row(
       children: [
         Expanded(
-          child: _buildActionButton(
-            icon: Icons.content_cut,
-            label: locale.t('fifty_fifty'),
-            enabled: _isVotingActive && !_fiftyFiftyUsed,
-            onTap: _useFiftyFifty,
+          child: _buildOutlineButton(
+            icon: Icons.edit_note_rounded,
+            label: locale.t('manage_questions'),
+            onTap: () => _openManage(context, locale),
           ),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildActionButton(
-            icon: Icons.visibility,
-            label: locale.t('reveal'),
-            enabled: _isVotingActive && !_revealUsed,
-            onTap: _useReveal,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildActionButton(
-            icon: Icons.skip_next,
-            label: locale.t('next'),
-            enabled: true,
-            onTap: _nextQuestion,
-          ),
+        const SizedBox(width: 10),
+        _buildIconOnlyButton(
+          icon: Icons.refresh_rounded,
+          onTap: () => _confirmReset(context),
         ),
       ],
     );
   }
 
-  Widget _buildActionButton({
+  Widget _buildOutlineButton({
     required IconData icon,
     required String label,
-    required bool enabled,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: enabled ? 1.0 : 0.4,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.panelDark,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: enabled ? AppColors.gold : AppColors.panelBlue,
-              width: 1.5,
-            ),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.panelDark.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: AppColors.panelBlue,
+            width: 1.2,
           ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                color: enabled ? AppColors.gold : AppColors.textSecondary,
-                size: 20,
-              ),
-              const SizedBox(height: 4),
-              Text(
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: AppColors.gold, size: 18),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: enabled ? AppColors.gold : AppColors.textSecondary,
+                  color: AppColors.textPrimary,
+                  letterSpacing: 0.5,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildIconOnlyButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.panelDark.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: AppColors.panelBlue,
+            width: 1.2,
+          ),
+        ),
+        child: Icon(icon, color: AppColors.gold, size: 18),
+      ),
+    );
+  }
+
+  void _startGame(BuildContext context, LocaleService locale) async {
+    final service = context.read<QuestionService>();
+    await service.loadQuestions(locale.currentLang);
+    if (!context.mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const GameScreen()),
+    );
+  }
+
+  void _openManage(BuildContext context, LocaleService locale) async {
+    final service = context.read<QuestionService>();
+    await service.loadQuestions(locale.currentLang);
+    if (!context.mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ManageQuestionsScreen()),
+    );
+  }
+
+  void _confirmReset(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.panelDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) {
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.panelBlue,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Icon(
+                Icons.restart_alt_rounded,
+                color: AppColors.wrong,
+                size: 40,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Reset all questions?',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Your custom questions will be deleted.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(
+                            color: AppColors.panelBlue,
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.poppins(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        context.read<QuestionService>().resetToDefaults();
+                        Navigator.pop(context);
+                      },
+                      style: TextButton.styleFrom(
+                        backgroundColor: AppColors.wrong,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Reset',
+                        style: GoogleFonts.poppins(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
   }
 }
