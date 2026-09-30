@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../config/theme.dart';
 import '../services/question_service.dart';
 import '../services/locale_service.dart';
-import '../config/theme.dart';
 import 'question_form_screen.dart';
 
 class ManageQuestionsScreen extends StatefulWidget {
@@ -14,16 +14,11 @@ class ManageQuestionsScreen extends StatefulWidget {
 }
 
 class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
-  String _filterLang = 'all';
-
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleService>();
     final service = context.watch<QuestionService>();
-
-    final list = _filterLang == 'all'
-        ? service.questions
-        : service.questions.where((q) => q.hasLanguage(_filterLang)).toList();
+    final list = service.questions;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -37,21 +32,26 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
         title: Text(
           locale.t('manage_questions'),
           style: GoogleFonts.orbitron(
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
             color: AppColors.gold,
-            letterSpacing: 2,
+            letterSpacing: 1.5,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.restore, color: AppColors.gold),
+            tooltip: 'Reset to defaults',
+            onPressed: () => _confirmReset(service),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.gold,
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const QuestionFormScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const QuestionFormScreen()),
           );
         },
         icon: const Icon(Icons.add, color: AppColors.background),
@@ -63,74 +63,15 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          _buildFilterRow(locale),
-          Expanded(
-            child: list.isEmpty
-                ? _buildEmpty(locale)
-                : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: list.length,
-              itemBuilder: (context, index) {
-                final q = list[index];
-                return _buildQuestionCard(q, index, locale, service);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterRow(LocaleService locale) {
-    final langs = [
-      {'code': 'all', 'label': 'ALL'},
-      ...LocaleService.supportedLanguages
-          .map((l) => {'code': l['code']!, 'label': l['code']!.toUpperCase()}),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      color: AppColors.panelDark,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: langs.map((l) {
-            final selected = _filterLang == l['code'];
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: GestureDetector(
-                onTap: () => setState(() => _filterLang = l['code']!),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.gold
-                        : AppColors.panelBlue.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: selected ? AppColors.gold : AppColors.panelBlue,
-                    ),
-                  ),
-                  child: Text(
-                    l['label']!,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: selected
-                          ? AppColors.background
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
+      body: list.isEmpty
+          ? _buildEmpty(locale)
+          : ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: list.length,
+        itemBuilder: (context, index) {
+          final q = list[index];
+          return _buildQuestionCard(q, index, service);
+        },
       ),
     );
   }
@@ -158,15 +99,8 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
     );
   }
 
-  Widget _buildQuestionCard(
-      dynamic q,
-      int index,
-      LocaleService locale,
-      QuestionService service,
-      ) {
-    final previewLang = _filterLang == 'all' ? 'en' : _filterLang;
-    final questionText = q.getQuestion(previewLang);
-    final langs = (q.translations as Map).keys.join(', ').toUpperCase();
+  Widget _buildQuestionCard(dynamic q, int index, QuestionService service) {
+    final letters = ['A', 'B', 'C', 'D'];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -202,7 +136,7 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  questionText,
+                  q.question,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
@@ -215,18 +149,54 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
             ],
           ),
           const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: List.generate(4, (i) {
+              final isCorrect = i == q.correct;
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: isCorrect
+                      ? AppColors.correct.withOpacity(0.2)
+                      : AppColors.panelBlue.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: isCorrect ? AppColors.correct : AppColors.panelBlue,
+                  ),
+                ),
+                child: Text(
+                  '${letters[i]}: ${q.options[i]}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: isCorrect ? FontWeight.bold : FontWeight.normal,
+                    color: isCorrect
+                        ? AppColors.correct
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.panelBlue,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  langs,
-                  style: GoogleFonts.poppins(
-                    fontSize: 10,
+                  '${q.reward}',
+                  style: GoogleFonts.orbitron(
+                    fontSize: 11,
                     color: AppColors.gold,
                     fontWeight: FontWeight.bold,
                   ),
@@ -234,7 +204,11 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
               ),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.edit, color: AppColors.optionB, size: 20),
+                icon: const Icon(
+                  Icons.edit,
+                  color: AppColors.optionB,
+                  size: 20,
+                ),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -245,7 +219,11 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
                 },
               ),
               IconButton(
-                icon: const Icon(Icons.delete, color: AppColors.wrong, size: 20),
+                icon: const Icon(
+                  Icons.delete,
+                  color: AppColors.wrong,
+                  size: 20,
+                ),
                 onPressed: () => _confirmDelete(q, service),
               ),
             ],
@@ -275,6 +253,42 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
           TextButton(
             onPressed: () {
               service.deleteQuestion(q.id);
+              Navigator.pop(context);
+            },
+            child: Text(
+              'Yes',
+              style: GoogleFonts.poppins(color: AppColors.wrong),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmReset(QuestionService service) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.panelDark,
+        title: Text(
+          'Reset to defaults?',
+          style: GoogleFonts.poppins(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          'Your custom questions will be deleted.',
+          style: GoogleFonts.poppins(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'No',
+              style: GoogleFonts.poppins(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              service.resetToDefaults();
               Navigator.pop(context);
             },
             child: Text(
