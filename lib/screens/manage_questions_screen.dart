@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/question_service.dart';
 import '../services/locale_service.dart';
-import '../theme.dart';
+import '../config/theme.dart';
 import 'question_form_screen.dart';
 
 class ManageQuestionsScreen extends StatefulWidget {
