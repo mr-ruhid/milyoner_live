@@ -112,12 +112,11 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
     return true;
   }
 
-  int get _filledCount =>
-      _langs.where(_isLangFilled).length;
+  int get _filledCount => _langs.where(_isLangFilled).length;
 
   @override
   Widget build(BuildContext context) {
-    final locale = context.read<LocaleService>();
+    final locale = context.watch<LocaleService>();
     final isEdit = widget.question != null;
 
     return Scaffold(
@@ -131,11 +130,12 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
               : Column(
             children: [
               _buildAppBar(context, locale, isEdit),
-              _buildProgressBar(),
+              _buildProgressBar(locale),
               _buildLangTabs(locale),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
+                  padding:
+                  const EdgeInsets.fromLTRB(16, 12, 16, 30),
                   child: _buildForm(locale, _activeTab),
                 ),
               ),
@@ -205,7 +205,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
     );
   }
 
-  Widget _buildProgressBar() {
+  Widget _buildProgressBar(LocaleService locale) {
     final total = _langs.length;
     final filled = _filledCount;
     final isComplete = filled == total && total > 0;
@@ -223,7 +223,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
               ),
               const SizedBox(width: 6),
               Text(
-                '$filled / $total languages filled',
+                '$filled / $total ${locale.t('languages_filled')}',
                 style: GoogleFonts.poppins(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -363,9 +363,9 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
           decoration: _inputDecoration('...'),
         ),
         const SizedBox(height: 20),
-        _buildLabel('Options'),
+        _buildLabel(locale.t('options')),
         const SizedBox(height: 8),
-        ...List.generate(4, (i) => _buildOptionField(oCtrl[i], i)),
+        ...List.generate(4, (i) => _buildOptionField(oCtrl[i], i, locale)),
         const SizedBox(height: 20),
         _buildLabel(locale.t('correct_answer')),
         const SizedBox(height: 8),
@@ -425,7 +425,11 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
     );
   }
 
-  Widget _buildOptionField(TextEditingController ctrl, int index) {
+  Widget _buildOptionField(
+      TextEditingController ctrl,
+      int index,
+      LocaleService locale,
+      ) {
     final letter = String.fromCharCode(65 + index);
     final isCorrect = _correct == index;
 
@@ -463,7 +467,9 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
               controller: ctrl,
               onChanged: (_) => setState(() {}),
               style: GoogleFonts.poppins(color: Colors.white, fontSize: 13),
-              decoration: _inputDecoration('$letter option'),
+              decoration: _inputDecoration(
+                '$letter ${locale.t('option_hint')}',
+              ),
             ),
           ),
         ],
@@ -538,7 +544,7 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
                 gradient: selected
-                    ? LinearGradient(
+                    ? const LinearGradient(
                   colors: [AppColors.gold, AppColors.goldDark],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -641,8 +647,9 @@ class _QuestionFormScreenState extends State<QuestionFormScreen> {
   }
 
   Future<void> _save() async {
+    final locale = context.read<LocaleService>();
     if (_filledCount != _langs.length) {
-      _showError('Fill all languages first');
+      _showError(locale.t('fill_all_languages'));
       return;
     }
 

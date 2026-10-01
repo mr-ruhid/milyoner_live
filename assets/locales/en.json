@@ -47,5 +47,9 @@
   "correct_short": "correct",
   "delete_confirm_title": "Delete?",
   "yes": "Yes",
-  "no": "No"
+  "no": "No",
+  "options": "Options",
+  "fill_all_languages": "Fill all languages first",
+  "languages_filled": "languages filled",
+  "option_hint": "option"
 }
