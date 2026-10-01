@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../models/question.dart';
 import '../models/voter_info.dart';
+import '../services/locale_service.dart';
 
 const Color _kBorder = Color(0xFFD9D4C3);
 const LinearGradient _kFill = LinearGradient(
@@ -69,31 +71,33 @@ class _ResultScreenState extends State<ResultScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleService>();
     final letters = ['A', 'B', 'C', 'D'];
     final correctIdx = widget.question.correct;
     final correctLetter = letters[correctIdx];
-    final correctText = widget.question.options[correctIdx];
     final correctVoters = widget.voters[correctLetter] ?? [];
+    final totalCoins =
+    widget.votes.values.fold<int>(0, (a, b) => a + b);
 
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(gradient: _kBackground),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Column(
               children: [
-                _buildHeader(),
-                const SizedBox(height: 16),
+                _buildHeader(locale),
+                const SizedBox(height: 14),
                 _buildQuestionPanel(),
+                const SizedBox(height: 14),
+                _buildDistribution(locale, totalCoins),
                 const SizedBox(height: 16),
-                _buildCorrectAnswer(correctLetter, correctText),
-                const SizedBox(height: 22),
-                _buildVotersHeader(correctVoters.length),
-                const SizedBox(height: 10),
-                Expanded(child: _buildVotersList(correctVoters)),
+                _buildVotersHeader(locale, correctVoters.length),
+                const SizedBox(height: 8),
+                Expanded(child: _buildVotersList(locale, correctVoters)),
                 const SizedBox(height: 12),
-                _buildNextButton(),
+                _buildNextButton(locale),
               ],
             ),
           ),
@@ -102,7 +106,10 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(LocaleService locale) {
+    final wasCorrect = widget.topVotedWasCorrect;
+    final color = wasCorrect ? AppColors.correct : AppColors.wrong;
+
     return Row(
       children: [
         Container(
@@ -110,29 +117,23 @@ class _ResultScreenState extends State<ResultScreen> {
           decoration: BoxDecoration(
             gradient: _kFill,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _kBorder, width: 1.5),
+            border: Border.all(color: color, width: 1.5),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                widget.topVotedWasCorrect
-                    ? Icons.emoji_events
-                    : Icons.cancel_outlined,
-                color: widget.topVotedWasCorrect
-                    ? AppColors.correct
-                    : AppColors.wrong,
+                wasCorrect ? Icons.emoji_events : Icons.cancel_outlined,
+                color: color,
                 size: 16,
               ),
               const SizedBox(width: 8),
               Text(
-                widget.topVotedWasCorrect ? 'CORRECT' : 'WRONG',
+                wasCorrect ? locale.t('correct') : locale.t('wrong'),
                 style: GoogleFonts.orbitron(
                   fontSize: 12,
                   fontWeight: FontWeight.w900,
-                  color: widget.topVotedWasCorrect
-                      ? AppColors.correct
-                      : AppColors.wrong,
+                  color: color,
                   letterSpacing: 1.5,
                 ),
               ),
@@ -187,52 +188,151 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  Widget _buildCorrectAnswer(String letter, String text) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.correct.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.correct, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.correct.withOpacity(0.3),
-            blurRadius: 16,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.correct,
+  Widget _buildDistribution(LocaleService locale, int totalCoins) {
+    final letters = ['A', 'B', 'C', 'D'];
+    final correctIdx = widget.question.correct;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 14,
+              decoration: BoxDecoration(
+                color: AppColors.gold,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-            child: Center(
-              child: Text(
-                letter,
-                style: GoogleFonts.orbitron(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.background,
+            const SizedBox(width: 8),
+            Text(
+              locale.t('distribution'),
+              style: GoogleFonts.orbitron(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: 1.4,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...List.generate(4, (i) {
+          final letter = letters[i];
+          final coins = widget.votes[letter] ?? 0;
+          final percent =
+          totalCoins == 0 ? 0.0 : coins / totalCoins * 100;
+          final isCorrect = i == correctIdx;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: _buildDistributionRow(
+              letter: letter,
+              coins: coins,
+              percent: percent,
+              isCorrect: isCorrect,
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildDistributionRow({
+    required String letter,
+    required int coins,
+    required double percent,
+    required bool isCorrect,
+  }) {
+    final borderColor = isCorrect ? AppColors.correct : _kBorder;
+
+    return Container(
+      height: 34,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: borderColor.withOpacity(0.7),
+          width: 1.2,
+        ),
+        color: Colors.black.withOpacity(0.25),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(7),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: AnimatedFractionallySizedBox(
+                  duration: const Duration(milliseconds: 600),
+                  widthFactor: (percent / 100).clamp(0.0, 1.0),
+                  heightFactor: 1.0,
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    color: borderColor.withOpacity(0.22),
+                  ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              text,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isCorrect
+                        ? AppColors.correct
+                        : Colors.transparent,
+                    border: Border.all(color: borderColor, width: 1.3),
+                  ),
+                  child: Center(
+                    child: Text(
+                      letter,
+                      style: GoogleFonts.orbitron(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: isCorrect
+                            ? AppColors.background
+                            : AppColors.gold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '${percent.toStringAsFixed(0)}%',
+                    style: GoogleFonts.orbitron(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      color: borderColor,
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.monetization_on_outlined,
+                      color: AppColors.gold,
+                      size: 12,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$coins',
+                      style: GoogleFonts.orbitron(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.gold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
@@ -240,41 +340,47 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  Widget _buildVotersHeader(int count) {
+  Widget _buildVotersHeader(LocaleService locale, int count) {
     return Row(
       children: [
         Container(
           width: 4,
           height: 14,
           decoration: BoxDecoration(
-            color: AppColors.gold,
+            color: AppColors.correct,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          'VOTED FOR THE CORRECT ANSWER',
-          style: GoogleFonts.orbitron(
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-            color: Colors.white,
-            letterSpacing: 1.4,
+        Flexible(
+          child: Text(
+            locale.t('voted_correctly'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.orbitron(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: 1.2,
+            ),
           ),
         ),
         const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: AppColors.gold.withOpacity(0.2),
+            color: AppColors.correct.withOpacity(0.2),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.gold.withOpacity(0.6)),
+            border: Border.all(
+              color: AppColors.correct.withOpacity(0.6),
+            ),
           ),
           child: Text(
             '$count',
             style: GoogleFonts.orbitron(
               fontSize: 11,
               fontWeight: FontWeight.w900,
-              color: AppColors.gold,
+              color: AppColors.correct,
             ),
           ),
         ),
@@ -282,20 +388,20 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  Widget _buildVotersList(List<VoterInfo> voters) {
+  Widget _buildVotersList(LocaleService locale, List<VoterInfo> voters) {
     if (voters.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.person_off_outlined,
               size: 48,
               color: Colors.white24,
             ),
             const SizedBox(height: 12),
             Text(
-              'No one voted correctly',
+              locale.t('no_correct_votes'),
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 color: Colors.white54,
@@ -383,16 +489,17 @@ class _ResultScreenState extends State<ResultScreen> {
           width: size,
           height: size,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildInitialAvatar(voter, size),
+          errorBuilder: (_, __, ___) => _initialAvatar(voter, size),
         ),
       );
     }
-    return _buildInitialAvatar(voter, size);
+    return _initialAvatar(voter, size);
   }
 
-  Widget _buildInitialAvatar(VoterInfo voter, double size) {
-    final initial =
-    voter.username.isNotEmpty ? voter.username[0].toUpperCase() : '?';
+  Widget _initialAvatar(VoterInfo voter, double size) {
+    final initial = voter.username.isNotEmpty
+        ? voter.username[0].toUpperCase()
+        : '?';
     final color = _colorForName(voter.username);
     return Container(
       width: size,
@@ -429,17 +536,17 @@ class _ResultScreenState extends State<ResultScreen> {
     return palette[name.hashCode.abs() % palette.length];
   }
 
-  Widget _buildNextButton() {
+  Widget _buildNextButton(LocaleService locale) {
     return GestureDetector(
       onTap: _close,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.gold, AppColors.goldDark],
+          gradient: const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
+            colors: [AppColors.gold, AppColors.goldDark],
           ),
           borderRadius: BorderRadius.circular(30),
           border: Border.all(color: _kBorder, width: 1.5),
@@ -461,7 +568,7 @@ class _ResultScreenState extends State<ResultScreen> {
             ),
             const SizedBox(width: 10),
             Text(
-              'NEXT QUESTION',
+              locale.t('next_question'),
               style: GoogleFonts.orbitron(
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
