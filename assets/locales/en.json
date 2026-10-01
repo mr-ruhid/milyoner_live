@@ -35,5 +35,9 @@
   "reset_confirm_title": "Reset all questions?",
   "reset_confirm_body": "Your custom questions will be deleted.",
   "no_questions": "No questions yet",
-  "end_game": "END GAME"
+  "end_game": "END GAME",
+  "voted_correctly": "VOTED FOR THE CORRECT ANSWER",
+  "no_correct_votes": "No one voted correctly",
+  "next_question": "NEXT QUESTION",
+  "distribution": "VOTE DISTRIBUTION"
 }
