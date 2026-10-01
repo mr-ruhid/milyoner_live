@@ -37,7 +37,7 @@ flutter:
     - assets/gifts/star.webp
     - assets/gifts/tiktok.png
     - assets/gifts/universe.png
-    - lib/sound/main.mp3
+    - assets/sound/main.mp3
     - assets/sound/questions.mp3
     - assets/sound/result.mp3
     - assets/sound/winner.mp3
