@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../models/player_stats.dart';
+import '../services/locale_service.dart';
 
 const Color _kBorder = Color(0xFFD9D4C3);
 const LinearGradient _kFill = LinearGradient(
@@ -63,8 +65,8 @@ class _WinnersScreenState extends State<WinnersScreen> {
       if (a.sentUniverse != b.sentUniverse) {
         return a.sentUniverse ? -1 : 1;
       }
-      if (a.correctCount != b.correctCount) {
-        return b.correctCount.compareTo(a.correctCount);
+      if (a.score != b.score) {
+        return b.score.compareTo(a.score);
       }
       return b.totalCoins.compareTo(a.totalCoins);
     });
@@ -73,6 +75,8 @@ class _WinnersScreenState extends State<WinnersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = context.watch<LocaleService>();
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(gradient: _kBackground),
@@ -81,17 +85,17 @@ class _WinnersScreenState extends State<WinnersScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Column(
               children: [
-                _buildTopBar(),
+                _buildTopBar(locale),
                 const SizedBox(height: 14),
-                _buildTitle(),
+                _buildTitle(locale),
                 const SizedBox(height: 18),
                 Expanded(
                   child: _sorted.isEmpty
-                      ? _buildEmpty()
-                      : _buildLeaderboard(),
+                      ? _buildEmpty(locale)
+                      : _buildLeaderboard(locale),
                 ),
                 const SizedBox(height: 12),
-                _buildBottomBar(),
+                _buildBottomBar(locale),
               ],
             ),
           ),
@@ -100,7 +104,7 @@ class _WinnersScreenState extends State<WinnersScreen> {
     );
   }
 
-  Widget _buildTopBar() {
+  Widget _buildTopBar(LocaleService locale) {
     return Row(
       children: [
         Container(
@@ -120,7 +124,7 @@ class _WinnersScreenState extends State<WinnersScreen> {
               ),
               const SizedBox(width: 7),
               Text(
-                'FINAL RESULTS',
+                locale.t('final_results'),
                 style: GoogleFonts.orbitron(
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
@@ -155,7 +159,7 @@ class _WinnersScreenState extends State<WinnersScreen> {
     );
   }
 
-  Widget _buildTitle() {
+  Widget _buildTitle(LocaleService locale) {
     return Column(
       children: [
         Container(
@@ -185,7 +189,7 @@ class _WinnersScreenState extends State<WinnersScreen> {
         ),
         const SizedBox(height: 12),
         Text(
-          'WINNERS',
+          locale.t('winners'),
           style: GoogleFonts.orbitron(
             fontSize: 22,
             fontWeight: FontWeight.w900,
@@ -197,19 +201,19 @@ class _WinnersScreenState extends State<WinnersScreen> {
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty(LocaleService locale) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.sentiment_dissatisfied,
             size: 56,
             color: Colors.white24,
           ),
           const SizedBox(height: 14),
           Text(
-            'No players this round',
+            locale.t('no_players'),
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: Colors.white54,
@@ -221,16 +225,20 @@ class _WinnersScreenState extends State<WinnersScreen> {
     );
   }
 
-  Widget _buildLeaderboard() {
+  Widget _buildLeaderboard(LocaleService locale) {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 4),
       itemCount: _sorted.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, i) => _buildPlayerRow(_sorted[i], i),
+      itemBuilder: (context, i) => _buildPlayerRow(locale, _sorted[i], i),
     );
   }
 
-  Widget _buildPlayerRow(PlayerStats player, int index) {
+  Widget _buildPlayerRow(
+      LocaleService locale,
+      PlayerStats player,
+      int index,
+      ) {
     final isFirst = index == 0;
     final isUniverse = player.sentUniverse;
     final rank = index + 1;
@@ -299,7 +307,7 @@ class _WinnersScreenState extends State<WinnersScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${player.correctCount} / ${player.totalAnswered} correct',
+                  '${player.score} / ${player.totalAnswered} ${locale.t('correct_short')}',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     color: Colors.white70,
@@ -422,7 +430,7 @@ class _WinnersScreenState extends State<WinnersScreen> {
     return palette[name.hashCode.abs() % palette.length];
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomBar(LocaleService locale) {
     return GestureDetector(
       onTap: () => Navigator.pop(context),
       child: Container(
@@ -454,7 +462,7 @@ class _WinnersScreenState extends State<WinnersScreen> {
             ),
             const SizedBox(width: 10),
             Text(
-              'NEW GAME',
+              locale.t('new_game'),
               style: GoogleFonts.orbitron(
                 fontSize: 14,
                 fontWeight: FontWeight.w900,
