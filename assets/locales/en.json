@@ -39,5 +39,10 @@
   "voted_correctly": "VOTED FOR THE CORRECT ANSWER",
   "no_correct_votes": "No one voted correctly",
   "next_question": "NEXT QUESTION",
-  "distribution": "VOTE DISTRIBUTION"
+  "distribution": "VOTE DISTRIBUTION",
+  "final_results": "FINAL RESULTS",
+  "winners": "WINNERS",
+  "no_players": "No players this round",
+  "new_game": "NEW GAME",
+  "correct_short": "correct"
 }
