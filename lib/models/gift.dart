@@ -86,9 +86,9 @@ class GiftRegistry {
     Gift(
       name: 'Rosa',
       assetPath: 'assets/gifts/rosa.webp',
-      coins: 999,
+      coins: 10,
       action: GiftAction.powerFifty,
-      ids: [14453, 6245, 10382, 5753, 9717],
+      ids: [14453, 6245, 10382, 5753],
     ),
     Gift(
       name: 'Star',
@@ -100,9 +100,9 @@ class GiftRegistry {
     Gift(
       name: 'Airdrop',
       assetPath: 'assets/gifts/airdrop.webp',
-      coins: 10,
+      coins: 999,
       action: GiftAction.powerNextPlusPoint,
-      ids: [],
+      ids: [9717],
     ),
     Gift(
       name: 'Universe',
