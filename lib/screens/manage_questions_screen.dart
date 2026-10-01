@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../config/theme.dart';
+import '../models/question.dart';
 import '../services/question_service.dart';
 import '../services/locale_service.dart';
 import 'question_form_screen.dart';
@@ -47,7 +48,7 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
                   itemCount: list.length,
                   itemBuilder: (context, index) {
                     final q = list[index];
-                    return _buildQuestionCard(q, index, service);
+                    return _buildQuestionCard(q, index, service, locale);
                   },
                 ),
               ),
@@ -106,7 +107,7 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
           const SizedBox(width: 10),
           _buildCircleButton(
             icon: Icons.restore,
-            onTap: () => _confirmReset(service),
+            onTap: () => _confirmReset(service, locale),
           ),
         ],
       ),
@@ -173,7 +174,12 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
     );
   }
 
-  Widget _buildQuestionCard(dynamic q, int index, QuestionService service) {
+  Widget _buildQuestionCard(
+      Question q,
+      int index,
+      QuestionService service,
+      LocaleService locale,
+      ) {
     final letters = ['A', 'B', 'C', 'D'];
 
     return Container(
@@ -360,7 +366,7 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
                 _buildSmallAction(
                   icon: Icons.delete,
                   color: AppColors.wrong,
-                  onTap: () => _confirmDelete(q, service),
+                  onTap: () => _confirmDelete(q, service, locale),
                 ),
               ],
             ),
@@ -390,7 +396,11 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
     );
   }
 
-  void _confirmDelete(dynamic q, QuestionService service) {
+  void _confirmDelete(
+      Question q,
+      QuestionService service,
+      LocaleService locale,
+      ) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -400,7 +410,7 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
           side: const BorderSide(color: _kBorder, width: 1.5),
         ),
         title: Text(
-          'Delete?',
+          locale.t('delete_confirm_title'),
           style: GoogleFonts.orbitron(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -411,7 +421,7 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'No',
+              locale.t('no'),
               style: GoogleFonts.poppins(
                 color: Colors.white70,
                 fontWeight: FontWeight.w600,
@@ -420,11 +430,11 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
           ),
           TextButton(
             onPressed: () {
-              service.deleteQuestion(q.id);
+              service.deleteQuestionFromAllLanguages(q.id);
               Navigator.pop(context);
             },
             child: Text(
-              'Yes',
+              locale.t('yes'),
               style: GoogleFonts.poppins(
                 color: AppColors.wrong,
                 fontWeight: FontWeight.w700,
@@ -436,7 +446,7 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
     );
   }
 
-  void _confirmReset(QuestionService service) {
+  void _confirmReset(QuestionService service, LocaleService locale) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -446,7 +456,7 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
           side: const BorderSide(color: _kBorder, width: 1.5),
         ),
         title: Text(
-          'Reset to defaults?',
+          locale.t('reset_confirm_title'),
           style: GoogleFonts.orbitron(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -454,14 +464,14 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
           ),
         ),
         content: Text(
-          'Your custom questions will be deleted.',
+          locale.t('reset_confirm_body'),
           style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'No',
+              locale.t('no'),
               style: GoogleFonts.poppins(
                 color: Colors.white70,
                 fontWeight: FontWeight.w600,
@@ -474,7 +484,7 @@ class _ManageQuestionsScreenState extends State<ManageQuestionsScreen> {
               Navigator.pop(context);
             },
             child: Text(
-              'Yes',
+              locale.t('yes'),
               style: GoogleFonts.poppins(
                 color: AppColors.wrong,
                 fontWeight: FontWeight.w700,
