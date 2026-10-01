@@ -4,20 +4,20 @@ enum GiftAction {
   answerC,
   answerD,
   powerFifty,
-  powerReveal,
   powerNext,
+  powerNextPlusPoint,
   superUniverse,
 }
 
 class Gift {
   final String name;
-  final String emoji;
+  final String assetPath;
   final int coins;
   final GiftAction action;
 
   const Gift({
     required this.name,
-    required this.emoji,
+    required this.assetPath,
     required this.coins,
     required this.action,
   });
@@ -30,8 +30,8 @@ class Gift {
 
   bool get isPower =>
       action == GiftAction.powerFifty ||
-          action == GiftAction.powerReveal ||
-          action == GiftAction.powerNext;
+          action == GiftAction.powerNext ||
+          action == GiftAction.powerNextPlusPoint;
 
   bool get isSuper => action == GiftAction.superUniverse;
 
@@ -53,16 +53,54 @@ class Gift {
 
 class GiftRegistry {
   static const List<Gift> all = [
-    Gift(name: 'Rose', emoji: '🌹', coins: 1, action: GiftAction.answerA),
-    Gift(name: 'Finger Heart', emoji: '🫰', coins: 5, action: GiftAction.answerB),
-    Gift(name: 'Hand Hearts', emoji: '🫶', coins: 10, action: GiftAction.answerC),
-    Gift(name: 'Diamond', emoji: '💎', coins: 100, action: GiftAction.answerD),
-
-    Gift(name: 'Ice Cream', emoji: '🍦', coins: 1, action: GiftAction.powerFifty),
-    Gift(name: 'GG', emoji: '🎮', coins: 1, action: GiftAction.powerReveal),
-    Gift(name: 'Donut', emoji: '🍩', coins: 30, action: GiftAction.powerNext),
-
-    Gift(name: 'Universe', emoji: '🌌', coins: 34999, action: GiftAction.superUniverse),
+    Gift(
+      name: 'Rose',
+      assetPath: 'assets/gifts/rose.png',
+      coins: 1,
+      action: GiftAction.answerA,
+    ),
+    Gift(
+      name: 'TikTok',
+      assetPath: 'assets/gifts/tiktok.png',
+      coins: 1,
+      action: GiftAction.answerB,
+    ),
+    Gift(
+      name: 'GG',
+      assetPath: 'assets/gifts/gg.webp',
+      coins: 1,
+      action: GiftAction.answerC,
+    ),
+    Gift(
+      name: 'Love',
+      assetPath: 'assets/gifts/love.webp',
+      coins: 1,
+      action: GiftAction.answerD,
+    ),
+    Gift(
+      name: 'Rosa',
+      assetPath: 'assets/gifts/rosa.webp',
+      coins: 10,
+      action: GiftAction.powerFifty,
+    ),
+    Gift(
+      name: 'Star',
+      assetPath: 'assets/gifts/star.webp',
+      coins: 1,
+      action: GiftAction.powerNext,
+    ),
+    Gift(
+      name: 'Airdrop',
+      assetPath: 'assets/gifts/airdrop.webp',
+      coins: 10,
+      action: GiftAction.powerNextPlusPoint,
+    ),
+    Gift(
+      name: 'Universe',
+      assetPath: 'assets/gifts/universe.png',
+      coins: 34999,
+      action: GiftAction.superUniverse,
+    ),
   ];
 
   static Gift? byName(String name) {
