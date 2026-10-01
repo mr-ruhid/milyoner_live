@@ -27,5 +27,13 @@
   "settings": "SETTINGS",
   "sound": "SOUND",
   "music": "MUSIC",
-  "chat_language_hint": "Type /az /en /hi in chat to change your language"
+  "chat_language_hint": "Type /az /en /ru /tr in chat to change your language",
+  "disconnect": "DISCONNECT",
+  "connecting": "Connecting...",
+  "connect_first": "CONNECT FIRST",
+  "reset": "RESET",
+  "reset_confirm_title": "Reset all questions?",
+  "reset_confirm_body": "Your custom questions will be deleted.",
+  "no_questions": "No questions yet",
+  "end_game": "END GAME"
 }
