@@ -10,6 +10,7 @@ class GiftEvent {
   final String? nickname;
   final String? avatarUrl;
   final Gift gift;
+  final int giftId;
   final int repeatCount;
   final int totalCoins;
 
@@ -18,6 +19,7 @@ class GiftEvent {
     this.nickname,
     this.avatarUrl,
     required this.gift,
+    required this.giftId,
     this.repeatCount = 1,
     required this.totalCoins,
   });
@@ -85,11 +87,15 @@ class LiveService extends ChangeNotifier {
       final giftMap = data['gift'] as Map<String, dynamic>?;
       if (giftMap == null) return;
 
-      final giftName = giftMap['name'] as String?;
-      if (giftName == null) return;
+      final rawId = giftMap['id'];
+      final giftId = (rawId is int) ? rawId : int.tryParse('$rawId');
+      if (giftId == null) return;
 
-      final gift = GiftRegistry.byName(giftName);
-      if (gift == null) return;
+      final gift = GiftRegistry.byId(giftId);
+      if (gift == null) {
+        debugPrint('Unknown gift id: $giftId (${giftMap['name']})');
+        return;
+      }
 
       final user = data['user'] as Map<String, dynamic>?;
       final repeat = (data['repeatCount'] as num?)?.toInt() ?? 1;
@@ -99,6 +105,7 @@ class LiveService extends ChangeNotifier {
         nickname: user?['nickname'] as String?,
         avatarUrl: user?['avatarUrl'] as String?,
         gift: gift,
+        giftId: giftId,
         repeatCount: repeat,
         totalCoins: gift.coins * repeat,
       );
