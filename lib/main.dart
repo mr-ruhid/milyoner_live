@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 import 'config/theme.dart';
 import 'screens/home_screen.dart';
 import 'services/locale_service.dart';
+import 'services/live_service.dart';
 import 'services/question_service.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MilyonerApp());
 }
 
@@ -16,12 +18,9 @@ class MilyonerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => LocaleService()..init(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => QuestionService(),
-        ),
+        ChangeNotifierProvider(create: (_) => LocaleService()..init()),
+        ChangeNotifierProvider(create: (_) => QuestionService()),
+        ChangeNotifierProvider(create: (_) => LiveService()),
       ],
       child: MaterialApp(
         title: 'Milyoner Live',
@@ -31,7 +30,7 @@ class MilyonerApp extends StatelessWidget {
           brightness: Brightness.dark,
           fontFamily: 'Poppins',
         ),
-        home: HomeScreen(),
+        home: const HomeScreen(),
       ),
     );
   }
