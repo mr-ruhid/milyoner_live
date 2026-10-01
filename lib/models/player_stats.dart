@@ -3,6 +3,7 @@ class PlayerStats {
   final String? avatarUrl;
   final int correctCount;
   final int totalAnswered;
+  final int bonusPoints;
   final bool sentUniverse;
   final int totalCoins;
 
@@ -11,15 +12,19 @@ class PlayerStats {
     this.avatarUrl,
     required this.correctCount,
     required this.totalAnswered,
+    this.bonusPoints = 0,
     this.sentUniverse = false,
     this.totalCoins = 0,
   });
+
+  int get score => correctCount + bonusPoints;
 
   PlayerStats copyWith({
     String? username,
     String? avatarUrl,
     int? correctCount,
     int? totalAnswered,
+    int? bonusPoints,
     bool? sentUniverse,
     int? totalCoins,
   }) {
@@ -28,6 +33,7 @@ class PlayerStats {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       correctCount: correctCount ?? this.correctCount,
       totalAnswered: totalAnswered ?? this.totalAnswered,
+      bonusPoints: bonusPoints ?? this.bonusPoints,
       sentUniverse: sentUniverse ?? this.sentUniverse,
       totalCoins: totalCoins ?? this.totalCoins,
     );
@@ -38,6 +44,7 @@ class PlayerStats {
     'avatarUrl': avatarUrl,
     'correctCount': correctCount,
     'totalAnswered': totalAnswered,
+    'bonusPoints': bonusPoints,
     'sentUniverse': sentUniverse,
     'totalCoins': totalCoins,
   };
@@ -48,6 +55,7 @@ class PlayerStats {
       avatarUrl: json['avatarUrl'] as String?,
       correctCount: json['correctCount'] as int? ?? 0,
       totalAnswered: json['totalAnswered'] as int? ?? 0,
+      bonusPoints: json['bonusPoints'] as int? ?? 0,
       sentUniverse: json['sentUniverse'] as bool? ?? false,
       totalCoins: json['totalCoins'] as int? ?? 0,
     );
