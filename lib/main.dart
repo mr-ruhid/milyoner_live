@@ -5,6 +5,7 @@ import 'screens/home_screen.dart';
 import 'services/locale_service.dart';
 import 'services/live_service.dart';
 import 'services/question_service.dart';
+import 'services/sound_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,7 @@ class MilyonerApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LocaleService()..init()),
         ChangeNotifierProvider(create: (_) => QuestionService()),
         ChangeNotifierProvider(create: (_) => LiveService()),
+        ChangeNotifierProvider(create: (_) => SoundService()),
       ],
       child: MaterialApp(
         title: 'Milyoner Live',
