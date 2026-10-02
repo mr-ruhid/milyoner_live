@@ -67,32 +67,15 @@ class LiveService extends ChangeNotifier {
     _setStatus(LiveStatus.connecting);
 
     try {
-      final onlineResult = await checkOnline(
-        cleanUsername,
-        timeout: const Duration(seconds: 15),
-      );
-
-      final roomId = onlineResult.roomId;
-      debugPrint('LiveService roomId: $roomId');
-
-      if (roomId == null || roomId.isEmpty) {
-        throw Exception('User is not live right now');
-      }
-
-      if (_manualDisconnect) {
-        _setStatus(LiveStatus.disconnected);
-        return;
-      }
-
       _client = TikTokLiveClient(cleanUsername)
-          .maxRetries(10)
-          .timeout(const Duration(seconds: 20))
-          .staleTimeout(const Duration(seconds: 90));
+          .maxRetries(3)
+          .timeout(const Duration(seconds: 15))
+          .staleTimeout(const Duration(seconds: 60));
 
       _client!.on(EventType.gift, _handleGift);
       _client!.on(EventType.chat, _handleChat);
 
-      await _client!.connect();
+      await _client!.connect().timeout(const Duration(seconds: 40));
 
       if (_manualDisconnect) {
         _client?.disconnect();
@@ -101,9 +84,16 @@ class LiveService extends ChangeNotifier {
       }
 
       _setStatus(LiveStatus.connected);
+    } on TimeoutException {
+      _lastError = 'Connection timed out. Check your network or try again';
+      _setStatus(LiveStatus.error);
+      _client?.disconnect();
+      _client = null;
     } catch (e) {
       _lastError = _friendlyError(e);
       _setStatus(LiveStatus.error);
+      _client?.disconnect();
+      _client = null;
       debugPrint('LiveService connect error: $e');
     }
   }
@@ -112,7 +102,8 @@ class LiveService extends ChangeNotifier {
     final msg = e.toString();
     if (msg.contains('HostNotOnline') ||
         msg.contains('not live') ||
-        msg.contains('offline')) {
+        msg.contains('offline') ||
+        msg.contains('status code 4')) {
       return 'User is not live on TikTok right now';
     }
     if (msg.contains('DeviceBlocked') || msg.contains('DEVICE_BLOCKED')) {
