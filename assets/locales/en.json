@@ -51,5 +51,8 @@
   "options": "Options",
   "fill_all_languages": "Fill all languages first",
   "languages_filled": "languages filled",
-  "option_hint": "option"
+  "option_hint": "option",
+  "send_to_vote": "SEND TO VOTE",
+  "just_sent": "sent",
+  "waiting_gifts": "Waiting for gifts..."
 }
