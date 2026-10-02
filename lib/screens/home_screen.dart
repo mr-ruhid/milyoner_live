@@ -6,6 +6,7 @@ import '../config/theme.dart';
 import '../services/locale_service.dart';
 import '../services/live_service.dart';
 import '../services/question_service.dart';
+import '../services/sound_service.dart';
 import 'game_screen.dart';
 import 'manage_questions_screen.dart';
 
@@ -37,6 +38,10 @@ class _HomeScreenState extends State<HomeScreen>
     _pulseAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<SoundService>().startHomeMusic();
+    });
   }
 
   @override
