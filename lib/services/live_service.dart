@@ -50,13 +50,41 @@ class LiveService extends ChangeNotifier {
       return;
     }
 
+    final cleanUsername = tiktokUsername
+        .trim()
+        .replaceFirst(RegExp(r'^@'), '')
+        .replaceAll(RegExp(r'\s+'), '');
+
+    if (cleanUsername.isEmpty) {
+      _lastError = 'Username is empty';
+      _setStatus(LiveStatus.error);
+      return;
+    }
+
     _manualDisconnect = false;
-    _roomId = tiktokUsername;
+    _roomId = cleanUsername;
     _lastError = null;
     _setStatus(LiveStatus.connecting);
 
     try {
-      _client = TikTokLiveClient(tiktokUsername)
+      final onlineResult = await checkOnline(
+        cleanUsername,
+        timeout: const Duration(seconds: 15),
+      );
+
+      final roomId = onlineResult.roomId;
+      debugPrint('LiveService roomId: $roomId');
+
+      if (roomId == null || roomId.isEmpty) {
+        throw Exception('User is not live right now');
+      }
+
+      if (_manualDisconnect) {
+        _setStatus(LiveStatus.disconnected);
+        return;
+      }
+
+      _client = TikTokLiveClient(cleanUsername)
           .maxRetries(10)
           .timeout(const Duration(seconds: 20))
           .staleTimeout(const Duration(seconds: 90));
@@ -68,15 +96,35 @@ class LiveService extends ChangeNotifier {
 
       if (_manualDisconnect) {
         _client?.disconnect();
+        _setStatus(LiveStatus.disconnected);
         return;
       }
 
       _setStatus(LiveStatus.connected);
     } catch (e) {
-      _lastError = e.toString();
+      _lastError = _friendlyError(e);
       _setStatus(LiveStatus.error);
       debugPrint('LiveService connect error: $e');
     }
+  }
+
+  String _friendlyError(Object e) {
+    final msg = e.toString();
+    if (msg.contains('HostNotOnline') ||
+        msg.contains('not live') ||
+        msg.contains('offline')) {
+      return 'User is not live on TikTok right now';
+    }
+    if (msg.contains('DeviceBlocked') || msg.contains('DEVICE_BLOCKED')) {
+      return 'Access blocked by TikTok. Try again later';
+    }
+    if (msg.contains('NotFound') || msg.contains('404')) {
+      return 'TikTok user not found';
+    }
+    if (msg.contains('timeout') || msg.contains('Timeout')) {
+      return 'Connection timed out. Check your network';
+    }
+    return msg;
   }
 
   void _handleGift(dynamic evt) {
