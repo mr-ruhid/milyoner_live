@@ -11,6 +11,7 @@ import '../models/gift.dart';
 import '../services/question_service.dart';
 import '../services/locale_service.dart';
 import '../services/live_service.dart';
+import '../services/sound_service.dart';
 import 'question_form_screen.dart';
 import 'result_screen.dart';
 import 'winners_screen.dart';
@@ -60,6 +61,7 @@ class _GameScreenState extends State<GameScreen> {
 
   final Map<String, PlayerStats> _stats = {};
   LiveService? _live;
+  SoundService? _sound;
 
   GiftEvent? _lastGift;
   GiftAction? _highlightedAction;
@@ -81,11 +83,13 @@ class _GameScreenState extends State<GameScreen> {
     _highlightTimer?.cancel();
     _live?.onGift = null;
     _live?.onLanguageCommand = null;
+    _sound?.stopQuestion();
     super.dispose();
   }
 
   void _attachLive() {
     _live = context.read<LiveService>();
+    _sound = context.read<SoundService>();
     _live!.onGift = _handleGift;
     _live!.onLanguageCommand = _handleLanguage;
   }
@@ -222,6 +226,9 @@ class _GameScreenState extends State<GameScreen> {
       _topVotedIndex = -1;
       _topVotedWasCorrect = false;
     });
+
+    _sound?.startQuestion();
+
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) return;
       setState(() => _timeLeft--);
@@ -234,6 +241,9 @@ class _GameScreenState extends State<GameScreen> {
 
   Future<void> _revealResult() async {
     _timer?.cancel();
+    _sound?.stopQuestion();
+    _sound?.playResult();
+
     final question = _currentQuestion;
     if (question == null) return;
 
@@ -335,8 +345,11 @@ class _GameScreenState extends State<GameScreen> {
     _gameEnding = true;
     _timer?.cancel();
     _autoNextTimer?.cancel();
+    _sound?.stopQuestion();
 
     final players = _stats.values.toList();
+
+    _sound?.startWinners();
 
     await Navigator.push(
       context,
@@ -346,6 +359,8 @@ class _GameScreenState extends State<GameScreen> {
     );
 
     if (!mounted) return;
+    _sound?.stopWinners();
+
     _stats.clear();
     _currentIndex = 0;
     _gameEnding = false;
@@ -626,7 +641,19 @@ class _GameScreenState extends State<GameScreen> {
         child: Row(
           children: [
             if (show) ...[
-              Text(gift.gift.emoji, style: const TextStyle(fontSize: 16)),
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: Image.asset(
+                  gift.gift.assetPath,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.card_giftcard,
+                    color: AppColors.gold,
+                    size: 18,
+                  ),
+                ),
+              ),
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
@@ -928,9 +955,10 @@ class _GameScreenState extends State<GameScreen> {
             child: Image.asset(
               gift.assetPath,
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => Text(
-                gift.emoji,
-                style: const TextStyle(fontSize: 18),
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.card_giftcard,
+                color: AppColors.gold,
+                size: 20,
               ),
             ),
           ),
