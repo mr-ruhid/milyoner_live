@@ -11,7 +11,6 @@ enum GiftAction {
 
 class Gift {
   final String name;
-  final String emoji;
   final String assetPath;
   final int coins;
   final GiftAction action;
@@ -19,7 +18,6 @@ class Gift {
 
   const Gift({
     required this.name,
-    required this.emoji,
     required this.assetPath,
     required this.coins,
     required this.action,
@@ -59,7 +57,6 @@ class GiftRegistry {
   static const List<Gift> all = [
     Gift(
       name: 'Rose',
-      emoji: '🌹',
       assetPath: 'assets/gifts/rose.png',
       coins: 1,
       action: GiftAction.answerA,
@@ -67,7 +64,6 @@ class GiftRegistry {
     ),
     Gift(
       name: 'TikTok',
-      emoji: '📱',
       assetPath: 'assets/gifts/tiktok.png',
       coins: 1,
       action: GiftAction.answerB,
@@ -75,7 +71,6 @@ class GiftRegistry {
     ),
     Gift(
       name: 'GG',
-      emoji: '🎮',
       assetPath: 'assets/gifts/gg.webp',
       coins: 1,
       action: GiftAction.answerC,
@@ -83,7 +78,6 @@ class GiftRegistry {
     ),
     Gift(
       name: 'Love',
-      emoji: '💗',
       assetPath: 'assets/gifts/love.webp',
       coins: 1,
       action: GiftAction.answerD,
@@ -91,7 +85,6 @@ class GiftRegistry {
     ),
     Gift(
       name: 'Rosa',
-      emoji: '🌷',
       assetPath: 'assets/gifts/rosa.webp',
       coins: 10,
       action: GiftAction.powerFifty,
@@ -99,7 +92,6 @@ class GiftRegistry {
     ),
     Gift(
       name: 'Star',
-      emoji: '⭐',
       assetPath: 'assets/gifts/star.webp',
       coins: 1,
       action: GiftAction.powerNext,
@@ -107,7 +99,6 @@ class GiftRegistry {
     ),
     Gift(
       name: 'Airdrop',
-      emoji: '📦',
       assetPath: 'assets/gifts/airdrop.webp',
       coins: 999,
       action: GiftAction.powerNextPlusPoint,
@@ -115,7 +106,6 @@ class GiftRegistry {
     ),
     Gift(
       name: 'Universe',
-      emoji: '🌌',
       assetPath: 'assets/gifts/universe.png',
       coins: 34999,
       action: GiftAction.superUniverse,
