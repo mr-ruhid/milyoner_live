@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../models/player_stats.dart';
 import '../services/locale_service.dart';
+import '../services/sound_service.dart';
 
 const Color _kBorder = Color(0xFFD9D4C3);
 const LinearGradient _kFill = LinearGradient(
@@ -42,6 +43,10 @@ class _WinnersScreenState extends State<WinnersScreen> {
     super.initState();
     _timeLeft = widget.autoCloseSeconds;
     _sorted = _sortPlayers(widget.players);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<SoundService>().startWinners();
+    });
 
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) return;
