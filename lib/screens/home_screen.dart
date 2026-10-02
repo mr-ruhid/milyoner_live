@@ -51,6 +51,15 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
+  void _connect() {
+    final username = _usernameController.text.trim();
+    if (username.isEmpty) return;
+    final live = context.read<LiveService>();
+    if (live.isConnected || live.status == LiveStatus.connecting) return;
+    FocusScope.of(context).unfocus();
+    live.connect(username);
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = context.watch<LocaleService>();
@@ -260,6 +269,8 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildConnectSection(LiveService live, LocaleService locale) {
     final connected = live.isConnected;
     final connecting = live.status == LiveStatus.connecting;
+    final canConnect =
+        !connected && !connecting && _usernameController.text.trim().isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -294,6 +305,8 @@ class _HomeScreenState extends State<HomeScreen>
                   child: TextField(
                     controller: _usernameController,
                     enabled: !connected && !connecting,
+                    onChanged: (_) => setState(() {}),
+                    onSubmitted: (_) => _connect(),
                     style: GoogleFonts.poppins(
                       color: Colors.white,
                       fontSize: 13,
@@ -313,9 +326,7 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
                 if (connected)
                   GestureDetector(
-                    onTap: () {
-                      context.read<LiveService>().disconnect();
-                    },
+                    onTap: () => context.read<LiveService>().disconnect(),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
@@ -330,6 +341,55 @@ class _HomeScreenState extends State<HomeScreen>
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
                           color: AppColors.wrong,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  )
+                else if (connecting)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    child: SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(AppColors.gold),
+                      ),
+                    ),
+                  )
+                else
+                  GestureDetector(
+                    onTap: canConnect ? _connect : null,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        gradient: canConnect
+                            ? const LinearGradient(
+                          colors: [
+                            AppColors.gold,
+                            AppColors.goldDark,
+                          ],
+                        )
+                            : null,
+                        color: canConnect ? null : Colors.black.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: canConnect ? AppColors.gold : _kBorder,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        'CONNECT',
+                        style: GoogleFonts.orbitron(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: canConnect
+                              ? const Color(0xFF041A52)
+                              : Colors.white38,
                           letterSpacing: 1,
                         ),
                       ),
